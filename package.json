@@ -1,0 +1,15 @@
+{
+  "name": "openav_frontend",
+  "version": "1.0.0",
+  "description": "Web interface for https://github.com/Dartmouth-OpenAV",
+  "main": "task_runner.js",
+  "scripts": {
+    "build": "webpack --config ./webpack.config.js"
+  },
+  "author": "Jane Reynolds and Isaac Ramirez",
+  "license": "ISC",
+  "private": true,
+  "devDependencies": {
+    "webpack": "^5.97.0"
+  }
+}

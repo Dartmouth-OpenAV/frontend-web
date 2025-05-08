@@ -375,6 +375,10 @@ async function getStatus() {
     document.getElementById("room-name").innerHTML = status.system_name;
     document.getElementById("room-header").classList.remove("hidden");
 
+    // maintenance modal data
+    document.getElementById( "maintenance" ).querySelector( "pre" ).innerHTML = JSON.stringify(status, null, 4) ;
+		document.getElementById( "maintenance" ).querySelector( ".timestamp" ).innerHTML = new Date() ;
+
     // main controls
     if (redraw && status.control_sets) {
       for (const controlSet in status.control_sets) {

@@ -863,7 +863,6 @@ h1#room-name {
 }
 
 
-
 /* Advanced Controls */
 #advanced-modals-container .modal .exit-modal {
   position: absolute;
@@ -1021,38 +1020,52 @@ form#join_meeting_by_id #form-actions button {
 
 /* Maintenance modal */
 #maintenance {
-  width: 50rem;
-  height: 60rem;
-  top: 5rem;
-  left: calc(50% - 25rem);
+  width: 80%;
+  max-width: 960px;
+  height: calc(95% - var(--room-header-height));
+  top: var(--room-header-height);
+  left: 10%;
   background-color: #fff;
   color: #000;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding-bottom: 1.5rem;
+  font-size: 1.5rem;
 }
-/* #maintenance button {
-  margin-left: calc(50% - 6rem);
-  font-size: 1.6rem;
+#maintenance button.text-only {
   padding: 1rem 2rem;
-  background-color: #3d3d3d;
-  color: #fff;
-  box-shadow: 0 0.1rem 0.1rem 0 rgba(0, 0, 0, 0.15), 0 0.1rem 0.3rem 0.1rem rgba(0, 0, 0, 0.4);
+  border-radius: 1rem;
 }
-#maintenance button.active {
-  background-color: #c49cf5;
-  box-shadow: none;
-} */
 #maintenance button.dismiss {
   position: absolute;
   right: 0;
   top: 0;
-  font-size: 5rem;
+  font-size: 4rem;
   width: 6rem;
+  color: #000;
+  background: none;
+  box-shadow: none;
+  margin: 0;
 }
-#maintenance .modal-content {
-  height: calc(100% - 8rem);
-  overflow-y: scroll;
+#maintenance pre {
+  width: 100%;
+  height: calc(100% - 11rem);
+  overflow-y: auto;
 }
-#maintenance h3 {
-  margin-bottom: 0.5rem;
+#maintenance h1 {
+  flex-basis: 100%;
+  font-family: sans-serif;
+  font-size: 2rem;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+#maintenance .timestamp {
+  width: 100%;
+  margin-bottom: 1rem;
+}
+#maintenance.hidden {
+  display: none;
 }
 
 
@@ -1093,6 +1106,11 @@ form#join_meeting_by_id #form-actions button {
   }
   .camera-zoom.button-group {
     width: 28rem;
+  }
+}
+@media (min-width: 1200px) {
+  #maintenance {
+    left: calc(50% - 480px);
   }
 }
 @media (max-width: 1449px) {
@@ -1185,7 +1203,7 @@ form#join_meeting_by_id #form-actions button {
   }
 }
 @media (max-width: 837px) {
-  .modal {
+  .modal.modal-full {
     padding: 3rem 1rem;
   }
   .modal.modal-full h1 {

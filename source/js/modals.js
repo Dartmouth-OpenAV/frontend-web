@@ -23,7 +23,7 @@ function openModal(e = null, modalId = null) {
 }
 
 function closeModal(e) {
-  // e.target.parentElement.classList.add( 'hidden' );
+  console.log('closeModal got fired');
   clearTimeout(modalTimeoutId);
   const parentmodal = e.target.getAttribute("data-dismiss");
   document.getElementById(parentmodal).classList.add("hidden");

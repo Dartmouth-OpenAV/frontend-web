@@ -16,7 +16,7 @@ function openModal(e = null, modalId = null) {
   const linkedModal = document.getElementById(linkedModalId);
   linkedModal.classList.remove('hidden');
   modalTimeoutDuration = parseFloat(linkedModal.getAttribute('data-timeout')) * 60000;
-  timeoutModal();
+  timeoutModals();
 }
 
 function closeModal(e) {
@@ -26,7 +26,7 @@ function closeModal(e) {
 }
 
 // duration should be minutes
-function timeoutModal() {
+function timeoutModals() {
   clearTimeout(modalTimeoutId);
 
   modalTimeoutId = setTimeout(function () {
@@ -75,8 +75,8 @@ function setupModals(modals) {
 
   // attach listeners to reset timeout on any touch inside modal
   document.querySelectorAll('.modal:not(.timeout-exempt)').forEach((modal) => {
-    modal.addEventListener('click', timeoutModal);
-    modal.addEventListener('touchstart', timeoutModal);
+    modal.addEventListener('click', timeoutModals);
+    modal.addEventListener('touchstart', timeoutModals);
   });
 }
 
@@ -84,6 +84,6 @@ function setupModals(modals) {
 export {
   openModal,
   closeModal,
-  timeoutModal,
+  timeoutModals,
   setupModals
 };

@@ -1,5 +1,6 @@
 // Import all required modules
 import { openModal, closeModal, setupModals } from './modals.js';
+import { handleMaintenanceClick, resetMaintenanceModalTimeout } from './maintenance_modal.js';
 import { followPath } from './utilities.js';
 import { handlePanTiltZoom, handlePanTiltZoomStop } from './controls/camera_pan_tilt_zoom.js';
 import { handleDefaultButton } from './controls/default_button.js';
@@ -453,6 +454,10 @@ window.addEventListener("load", async (event) => {
   document.querySelectorAll(".modal .dismiss").forEach(function (dismiss) {
     dismiss.addEventListener("click", closeModal);
   });
+
+  // maintenance modal
+  document.getElementById('room-name').addEventListener('click', handleMaintenanceClick);
+  document.getElementById('maintenance').addEventListener('click', resetMaintenanceModalTimeout);
 });
 
 export { 

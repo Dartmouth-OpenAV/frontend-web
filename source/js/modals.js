@@ -7,28 +7,25 @@
  */
 import { setupControlSet } from './main.js';
 
-const modalTimeoutDurationDefault = 300000; // 5 minutes 
+const modalTimeoutDurationDefault = 5; // 5 minutes 
+let modalTimeoutDuration = modalTimeoutDurationDefault ;
 let modalTimeoutId;
-let modalTimeoutDuration = modalTimeoutDurationDefault;
 
 function openModal(e = null, modalId = null) {
   const linkedModalId = e ? e.target.getAttribute('data-modal') : modalId;
-
   const linkedModal = document.getElementById(linkedModalId);
   linkedModal.classList.remove('hidden');
-  modalTimeoutDuration = linkedModal.getAttribute('data-timeout') && !isNaN(linkedModal.getAttribute('data-timeout')) ?
-    parseInt(linkedModal.getAttribute('data-timeout')) * 60000
-    : modalTimeoutDurationDefault; // Global variable that gets consumed by timeoutModal()
+  modalTimeoutDuration = parseFloat(linkedModal.getAttribute('data-timeout')) * 60000;
   timeoutModal();
 }
 
 function closeModal(e) {
-  console.log('closeModal got fired');
   clearTimeout(modalTimeoutId);
   const parentmodal = e.target.getAttribute("data-dismiss");
   document.getElementById(parentmodal).classList.add("hidden");
 }
 
+// duration should be minutes
 function timeoutModal() {
   clearTimeout(modalTimeoutId);
 
@@ -36,7 +33,7 @@ function timeoutModal() {
     document.querySelectorAll('.modal:not(.timeout-exempt)').forEach((modal) => {
       modal.classList.add('hidden');
     });
-  }, modalTimeoutDuration);
+  }, modalTimeoutDuration );
 }
 
 function setupModals(modals) {
@@ -45,7 +42,7 @@ function setupModals(modals) {
     if (!document.getElementById(modal)) {
       // render new modals
       // timeoutDuration is in minutes
-      const timeoutDuration = modals[modal].timeout_timer ? modals[modal].timeout_timer : "5";
+      const timeoutDuration = modals[modal].timeout_timer ? modals[modal].timeout_timer : modalTimeoutDurationDefault;
       let html_blob = document.getElementById('advanced-modal-template').innerHTML
         .replace(/{{modalId}}/g, modal)
         .replace(/{{title}}/g, modals[modal].name)

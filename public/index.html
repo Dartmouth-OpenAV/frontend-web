@@ -75,10 +75,17 @@
 <!-- popup maintenance modal -->
 <div id="maintenance" class="modal modal-popup timeout-exempt hidden">
   <button class="dismiss" data-dismiss="maintenance" aria-label="Close maintenance modal">&times;</button>
+  <div id="tech-errors"></div>
+  <script type="text/template" id="alert-template">
+    <div class="alert error">{{message}}</div>
+  </script>
+  
   <h1>System Status</h1>	
   <div class="timestamp"></div>
   <pre></pre>
-  <button type="button" id="config-reload-btn" class="text-only">Reload config</button>
+  <div id="maintenance-actions">
+    <button type="button" id="config-reload-btn" class="text-only">Reload config</button>
+  </div>  
 </div>
 
 

@@ -408,6 +408,23 @@ async function getStatus() {
 }
 
 
+// clear cache and reload
+function clearSystemCache() {
+  document.getElementById('tech-errors').innerHTML = '';
+
+  const options = {
+    method: 'delete'
+  };
+  fetch(`${orchestrator}/api/systems/${system}/cache`, options)
+    .then(response => {
+      if ( response.ok ) {
+        getStatus();
+      } else {
+        const alert = document.getElementById('alert-template').innerHTML.replace(/{{message}}/, `ERROR: ${response.status} response from ${orchestrator}/api/systems/${system}/cache`) ;
+        document.getElementById('tech-errors').insertAdjacentHTML('beforeend', alert) ;      }
+    })
+}
+
 
 /* page load listener */
 window.addEventListener("load", async (event) => {
@@ -451,16 +468,23 @@ window.addEventListener("load", async (event) => {
   });
 
   // modal dismiss listeners
-  document.querySelectorAll(".modal .dismiss").forEach(function (dismiss) {
+  document.querySelectorAll(".modal:not(.timeout-exempt) .dismiss").forEach(function (dismiss) {
     dismiss.addEventListener("click", closeModal);
   });
 
   // maintenance modal
   document.getElementById('room-name').addEventListener('click', handleMaintenanceClick);
   document.getElementById('maintenance').addEventListener('click', resetMaintenanceModalTimeout);
+  document.getElementById('config-reload-btn').addEventListener('click', clearSystemCache);
+  document.querySelector('#maintenance .dismiss').addEventListener('click', ()=> {
+    document.getElementById('maintenance').classList.add('hidden');
+    document.getElementById('tech-errors').innerHTML = '';
+  });
 });
 
 export { 
+  orchestrator,
+  system,
   updateStatus, 
   setupControlSet,
   refresh, 

@@ -281,93 +281,62 @@ function updateAllControls(statusData) {
   });
 }
 
-async function updateStatus(payload, callback) {
-  // Delay incoming update until current update has finished
-  if (updateStatusOngoing) {
-    setTimeout(updateStatus(payload, callback), 500);
-    return null;
-  } else {
-    updateStatusOngoing = true;
-  }
-
-  // Pause refresh loop
-  window.clearTimeout(refresh);
-
-  // Send the update to the orchestrator
-  const response = await fetch(`${orchestrator}/api/systems/${system}/state`, {
-    method: 'PUT',
-    body: payload
-  })
-    .then(response => response.json())
-    .catch(error => {
-      console.error('Error:', error);
-    });
-
-  // Call the callback function if one is provided
-  if (callback) {
-    callback(response);
-  }
-
-  // Reset refresh loop
-  refresh = window.setTimeout(getStatus, 5000);
-
-  // Allow other updates to go through
-  updateStatusOngoing = false;
-
-  return response;
+function failover() {
+  console.log("failover placeholder") ;
+  return false
 }
 
-async function getStatus() {
-  window.clearTimeout(refresh); // pause refresh loop
+// Wrapper function for getStatus and updateStatus; handles orchestrator errors
+async function orchestratorRequest(url, options) {
+  // Pause refresh loop
+  window.clearTimeout(refresh); 
 
-  let redraw = document.getElementById("main-controls").innerHTML ? false : true;
-
-  const status = await fetch(`${orchestrator}/api/systems/${system}/state`)
+  return fetch(url, { ...options, signal: AbortSignal.timeout(5000) })
     .then(response => {
-      if (response.status !== 200) {
-        clearDisplay();
-        redraw = true;
-        let message;
-        switch (response.status) {
-          case 204:
-            message = "<p>System initializing ...</p>";
-            break;
-          case 404:
-            message = "<p>Could not find system</p>";
-            break;
-          case 500:
-            message = "<p>Internal Server Error</p>";
-            break;
-          default:
-            message = "<p>System status unknown</p>";
-        }
+      // On success, restart the refresh loop and return JSON
+      if ( response.status === 200 ) {
+        retries = 2;
+        refresh = window.setTimeout(getStatus, 5000);
+        return response.json()
+      }
 
-        document.getElementById("message").innerHTML = message;
+      // Check for 204 and 404 (expected/user error states):
+      if (response.status === 204 || response.status === 404) {
+        clearDisplay();
+        document.getElementById("message").innerHTML = response.status === 204 ? "<p>System initializing ...</p>" : "<p>Could not find system</p>";
         document.getElementById("message").classList.remove("hidden");
 
+        // restart refresh loop
+        retries = 2;
+        refresh = window.setTimeout(getStatus, 5000);
         return false
       }
 
-      // 200 response:
-      retries = 2 ;
-      return response.json()
+      // Failover on 500+ response; intentionally hiding error from user
+      // TO DO: log error to orchestrator
+      if ( retries > 0 ) {
+        retries-- ;
+        return orchestratorRequest(url, options)
+      }
+      return failover()
     })
+    // On timeouts, failover; intentionally hiding error from user
     .catch(err => {
-      document.getElementById("message").innerHTML = `<p>Unable to reach orchestrator ${orchestrator}</p>` ;
-      document.getElementById("message").classList.remove("hidden") ;
-      retries-- ;
+      console.log(err) ;
+      // TO DO: log error to orchestrator
 
-      return false
+      if ( retries > 0 ) {
+        retries--;
+        return orchestratorRequest(url, options)
+      }
+      return failover()
     })
+}
 
-  // reset refresh loop, except in case of fetch failure
-  if ( retries > -1 ) {
-    refresh = window.setTimeout(getStatus, 5000);
-  }
-  else {
-    document.getElementById("message").innerHTML += '<p>Refresh your browser to try again.</p>' ;
-  }
-  
+// Fetch system state from orchestrator
+async function getStatus() {
+  const status = await orchestratorRequest( `${orchestrator}/api/systems/${system}/state` ) ;
+
   // re/draw the gui
   if (status) {
     document.getElementById("message").classList.add("hidden");
@@ -381,6 +350,8 @@ async function getStatus() {
 		document.getElementById( "maintenance" ).querySelector( ".timestamp" ).innerHTML = new Date() ;
 
     // main controls
+    let redraw = document.getElementById("main-controls").innerHTML ? false : true;
+
     if (redraw && status.control_sets) {
       for (const controlSet in status.control_sets) {
         let path = `{"control_sets":{"${controlSet}":{"controls":{"<id>":{"value":<value>}}}}}`;
@@ -405,6 +376,34 @@ async function getStatus() {
     // update controls to the current state
     updateAllControls(status);
   }
+}
+
+// Send user request to orchestrator 
+async function updateStatus(payload, callback) {
+  // Delay incoming update until current update has finished
+  if (updateStatusOngoing) {
+    setTimeout(updateStatus(payload, callback), 500);
+    return null
+  } else {
+    updateStatusOngoing = true;
+  }
+
+  // Send the update to the orchestrator
+  const options = {
+    method: 'PUT',
+    body: payload
+  }
+  const response = await orchestratorRequest(`${orchestrator}/api/systems/${system}/state`, options ) ;
+
+  // Call the callback function if one is provided
+  if ( response && callback ) {
+    callback(response);
+  }
+
+  // Allow other updates to go through
+  updateStatusOngoing = false;
+
+  return response
 }
 
 

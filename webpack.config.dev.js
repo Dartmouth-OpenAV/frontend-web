@@ -1,6 +1,7 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const WebpackShellPluginNext = require('webpack-shell-plugin-next');
 
 module.exports = {
   mode: 'development',
@@ -15,11 +16,18 @@ module.exports = {
   plugins: [
     new HtmlWebpackPlugin({
       template: 'source/index.html',
-      favicon: 'source/favicon.svg'
+      favicon: 'source/favicon.svg',
     }),
     new MiniCssExtractPlugin({
       filename: 'css/[name].css'
     }),
+    new WebpackShellPluginNext({
+      onBuildEnd:{
+        scripts: ['node inject-icons.js'],
+        blocking: false,
+        parallel: true
+      }
+    })
   ],
   module: {
     rules: [

@@ -4,7 +4,7 @@
   "description": "Web interface for https://github.com/Dartmouth-OpenAV",
   "main": "task_runner.js",
   "scripts": {
-    "build": "webpack --config ./webpack.config.js"
+    "build": "webpack --watch --config ./webpack.config.js"
   },
   "author": "Jane Reynolds and Isaac Ramirez",
   "license": "ISC",

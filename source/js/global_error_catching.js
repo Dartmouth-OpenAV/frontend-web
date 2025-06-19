@@ -6,6 +6,7 @@
  *                                                    
  */
 import { globals } from './globals.js';
+import { orchestratorRequest } from './main.js';
 
 // Global JS runtime error catching
 window.onerror = function(message, source, lineno, colno) {
@@ -18,7 +19,7 @@ window.onerror = function(message, source, lineno, colno) {
 async function throwClientError( message, code, severity ) {
     // Send the update to the orchestrator
     const orchestrator = globals.orchestrator;
-    const response = await fetch(`${orchestrator}/api/errors/client`, {
+    const response = await orchestratorRequest(`${orchestrator}/api/errors/client`, {
         method: "POST",
         body: JSON.stringify({
             message: message,
@@ -26,10 +27,10 @@ async function throwClientError( message, code, severity ) {
             severity: severity
         })
     })
-    .then(response => response.json())
     .catch(error => {
-        console.error('Error:', error);
+        console.error('Error in function throwClientError: ', error);
     });
+    return response;
 }
 
 export {

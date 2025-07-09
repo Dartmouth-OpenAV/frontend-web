@@ -6,11 +6,43 @@ on:
 
 jobs:
   webpack_build:
-    uses: ./.github/workflows/webpack_build.yml
+    runs-on: ubuntu-latest
+    outputs:
+      artifact-name: public-artifact
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with: 
+          node-version: 'lts/*'
+      
+      - name: Install dependencies from package-lock.json
+        run: npm ci --production=false
+
+      - name: Run webpack build to generate public folder
+        run: npm run build
+
+      - name: Upload public folder
+        uses: actions/upload-artifact@v3
+        with: 
+          name: public-folder
+          path: public/
 
   docker_build:
     needs: webpack_build
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-    uses: Dartmouth-OpenAV/shared-workflows/.github/workflows/build_latest.yaml@main
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Download public folder artifact
+        uses: actions/download-artifact@v3
+        with: 
+          name: public-folder
+          path: ./public
+
+      - name: Call shared Docker build workflow
+        uses: Dartmouth-OpenAV/shared-workflows/.github/workflows/build_latest.yaml@main

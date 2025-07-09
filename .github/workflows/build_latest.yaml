@@ -6,7 +6,7 @@ on:
 
 jobs:
   webpack_build:
-    uses: ./.github/workflows/webpack-build.yml
+    uses: ./.github/workflows/webpack_build.yml
 
   docker_build:
     needs: webpack_build

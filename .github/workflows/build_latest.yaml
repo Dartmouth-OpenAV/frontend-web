@@ -29,6 +29,9 @@ jobs:
           name: public-folder
           path: public/
 
+  pull_shared_workflow:
+    uses: Dartmouth-OpenAV/shared-workflows/.github/workflows/build_latest.yaml@main
+
   docker_build:
     needs: webpack_build
     runs-on: ubuntu-latest
@@ -45,4 +48,5 @@ jobs:
           path: ./public
 
       - name: Call shared Docker build workflow
-        uses: Dartmouth-OpenAV/shared-workflows/.github/workflows/build_latest.yaml@main
+        uses: actions/pull_shared_workflow
+        

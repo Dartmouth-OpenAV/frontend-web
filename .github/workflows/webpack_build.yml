@@ -15,7 +15,7 @@ jobs:
           node-version: 'lts/*'
       
       - name: Install dependencies from package-lock.json
-        run: npm ci
+        run: npm ci --production=false
 
       - name: Run webpack build
         run: npm run build

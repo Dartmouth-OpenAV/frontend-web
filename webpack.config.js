@@ -23,7 +23,7 @@ module.exports = {
       },
     }),
     new MiniCssExtractPlugin({
-      filename: 'css/[name].[contenthash].css'
+      filename: 'css/[name].css'
     }),
     new WebpackShellPluginNext({
       onBuildEnd:{

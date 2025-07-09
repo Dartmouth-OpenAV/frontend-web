@@ -5,7 +5,11 @@ on:
     branches: ["main"]
 
 jobs:
-  call-builder-workflow:
+  webpack_build:
+    uses: ./.github/workflows/webpack-build.yml
+
+  docker_build:
+    needs: webpack_build
     permissions:
       contents: read
       packages: write

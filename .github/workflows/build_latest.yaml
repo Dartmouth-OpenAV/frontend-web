@@ -30,9 +30,11 @@ jobs:
     #       path: public/
   get_public:
     needs: webpack_build
-    uses: actions/download-artifact@v4
-    with:
-      name: public-folder
+    steps:
+      - name: Download public folder from webpack build
+        uses: actions/download-artifact@v4
+        with:
+          name: public-folder
 
   docker_build:
     needs: webpack_build

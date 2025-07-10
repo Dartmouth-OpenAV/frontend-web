@@ -30,6 +30,7 @@ jobs:
     #       path: public/
   get_public:
     needs: webpack_build
+    runs-on: ubuntu-latest
     steps:
       - name: Download public folder from webpack build
         uses: actions/download-artifact@v4
@@ -37,7 +38,9 @@ jobs:
           name: public-folder
 
   docker_build:
-    needs: webpack_build
+    needs: 
+      - webpack_build
+      - get_public
     permissions:
       contents: read
       packages: write

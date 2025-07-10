@@ -8,19 +8,8 @@ jobs:
   webpack_build:
     uses: ./.github/workflows/webpack_build.yml
 
-  # get_public:
-  #   needs: webpack_build
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Download public folder from webpack build
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: public-folder
-
   docker_build:
-    needs: 
-      - webpack_build
-      # - get_public
+    needs: webpack_build
     permissions:
       contents: read
       packages: write

@@ -7,8 +7,6 @@ on:
 jobs:
   webpack_build:
     runs-on: ubuntu-latest
-    outputs:
-      artifact-name: public-artifact
     steps:
       - uses: actions/checkout@v3
 
@@ -29,24 +27,13 @@ jobs:
           name: public-folder
           path: public/
 
-  pull_shared_workflow:
-    uses: Dartmouth-OpenAV/shared-workflows/.github/workflows/build_latest.yaml@main
-
   docker_build:
     needs: webpack_build
-    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Download public folder artifact
-        uses: actions/download-artifact@v3
-        with: 
-          name: public-folder
-          path: ./public
-
-      - name: Call shared Docker build workflow
-        uses: actions/pull_shared_workflow
-        
+    # uses: Dartmouth-OpenAV/shared-workflows/.github/workflows/build_release.yaml@main
+    uses: Dartmouth-OpenAV/shared-workflows/.github/workflows/test.yaml@feature/optional-artifact-download
+    with:
+      artifact-name: public-folder 
+      artifact-path: './public'

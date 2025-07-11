@@ -26,7 +26,7 @@ services:
 ```
 If you don't set the HOME_ORCHESTRATOR variable, clients will have to specify an "orchestrator" URL param to load the GUI.
 
-3. You should now be able to load a GUI in your browser at http://localhost:8080. To tell the frontend server what system interface to load, provide a "system" param in the URL, eg.: http://localhost:8080&system=test-room . The "system" value should correspond to the ID of a configuration file in the config repo you specified for your [Orchestrator(s)](https://github.com/Dartmouth-OpenAV/orchestrator).
+3. You should now be able to load a GUI in your browser at http://localhost:8080. To tell the frontend server what system interface to load, provide a "system" param in the URL, eg.: http://localhost:8080?system=test-room . The "system" value should correspond to the ID of a configuration file in the config repo you specified for your [Orchestrator(s)](https://github.com/Dartmouth-OpenAV/orchestrator).
 
 
 ## Contributing

@@ -20,10 +20,11 @@ module.exports = {
       favicon: 'source/favicon.svg',
       minify: {
         removeComments: false,
+        collapseWhitespace: true
       },
     }),
     new MiniCssExtractPlugin({
-      filename: 'css/[name].css'
+      filename: 'css/[name].[contenthash].css'
     }),
     new WebpackShellPluginNext({
       onBuildEnd:{
@@ -36,11 +37,11 @@ module.exports = {
   module: {
     rules: [
       {
-        test: /\.css$/,
+        test: /\.css$/i,
         use: [MiniCssExtractPlugin.loader, 'css-loader'],
       },
       {
-        test: /\.ttf$/,
+        test: /\.(ttf|woff2?|eot)$/,
         type: 'asset/resource',
         generator: {
           filename: 'fonts/[hash][ext][query]'
@@ -49,7 +50,9 @@ module.exports = {
     ]
   },
   optimization: {
-    minimizer: [new CssMinimizerPlugin(),]
-  },
-  devtool: 'source-map',
+    minimizer: [
+      '...', // extend existing JS minimizer (TerserPlugin)
+      new CssMinimizerPlugin(),
+    ]
+  }
 };

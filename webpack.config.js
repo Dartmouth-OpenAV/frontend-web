@@ -54,5 +54,6 @@ module.exports = {
       '...', // extend existing JS minimizer (TerserPlugin)
       new CssMinimizerPlugin(),
     ]
-  }
+  },
+  devtool: 'source-map'
 };

@@ -4,7 +4,7 @@
  * 
  */
 import { updateStatus } from '../main.js';
-import { followPath } from '../utilities.js';
+import { followPath, appendUIInteractionJSON } from '../utilities.js';
 
 function setButtonState( btn, state, handler ) {
 	if ( state === true && btn.getAttribute( 'data-override') !== 'true' ) {
@@ -46,7 +46,7 @@ function handleToggleButton(e) {
 	// update backend
 	const path = btn.getAttribute('data-path') ;
 	const payload = path.replace( /<value>/, newState );
-	updateStatus(payload, reset);
+	updateStatus(appendUIInteractionJSON(payload), reset);
 }
 
 // Export functions

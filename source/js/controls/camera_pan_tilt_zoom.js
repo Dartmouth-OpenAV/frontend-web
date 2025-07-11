@@ -5,6 +5,7 @@
  */
 
 import { updateStatus} from '../main.js';
+import { appendUIInteractionJSON } from '../utilities.js';
 
 function handlePanTiltZoom(e) {
 	var btn = e.target ;
@@ -15,7 +16,7 @@ function handlePanTiltZoom(e) {
 	// update backend
 	const value = btn.getAttribute('data-value');
 	const payload = btn.parentElement.getAttribute('data-path').replace(/<value>/, value);
-	updateStatus(payload, null);
+	updateStatus(appendUIInteractionJSON( payload ), null);
 }
 
 function handlePanTiltZoomStop(e) {
@@ -28,7 +29,7 @@ function handlePanTiltZoomStop(e) {
 	const panCommands = [ '"left"', '"right"', '"up"', '"down"' ]; // zoom commands are 'in' and 'out'
 	const value = panCommands.includes( btn.getAttribute('data-value') ) ? '"pan stop"' : '"zoom stop"' ; 
 	const payload = btn.parentElement.getAttribute('data-path').replace(/<value>/, value);
-	updateStatus(payload, null);
+	updateStatus(appendUIInteractionJSON( payload ), null);
 }
 
 // Export functions

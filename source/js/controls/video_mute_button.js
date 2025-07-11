@@ -6,7 +6,7 @@
 
 import { updateStatus} from '../main.js';
 import { setDisplaySourceOptionState } from './display_source_radio.js';
-import { followPath } from '../utilities.js';
+import { followPath, appendUIInteractionJSON } from '../utilities.js';
 
 function setVideoMuteButtonState( btn, state ) {
 	// when video is muted, color the button, show the slash, and change text to 
@@ -63,7 +63,7 @@ function handleVideoMute(e) {
 	}
 
 	// update backend
-	updateStatus(payload, reset);
+	updateStatus(appendUIInteractionJSON(payload), reset);
 }
 
 // Export functions

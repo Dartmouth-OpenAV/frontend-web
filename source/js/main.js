@@ -12,6 +12,7 @@ import { setButtonState, handleToggleButton } from './controls/toggle_button.js'
 import { setVideoMuteButtonState } from './controls/video_mute_button.js';
 import { setVolumeSliderState } from './controls/volume_slider.js';
 import { globals } from './globals.js';
+import { throwClientError } from './global_error_catching.js';
 import '../css/styles.css'
 
 let orchestrator, system, refresh;
@@ -314,6 +315,15 @@ async function orchestratorRequest(url, options) {
         return false
       }
 
+      // Happens if the payload for an error is invalid.
+      if (response.status === 400) {
+        response.json().then(data => {
+          console.log("Bad request: ", data);
+        });
+        refresh = window.setTimeout(getStatus, 5000);
+        return false
+      }
+
       // Failover on 500+ response; intentionally hiding error from user
       // TO DO: log error to orchestrator
       if ( retries > 0 ) {
@@ -324,7 +334,7 @@ async function orchestratorRequest(url, options) {
     })
     // On timeouts, failover; intentionally hiding error from user
     .catch(err => {
-      console.log(err) ;
+      console.log(err);
       // TO DO: log error to orchestrator
 
       if ( retries > 0 ) {
@@ -492,5 +502,6 @@ export {
   updateStatus, 
   setupControlSet,
   refresh, 
-  availableTimers 
+  availableTimers,
+  orchestratorRequest
 };

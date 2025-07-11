@@ -11,7 +11,8 @@ import { handleRadioSelect } from './controls/radio.js';
 import { setButtonState, handleToggleButton } from './controls/toggle_button.js';
 import { setVideoMuteButtonState } from './controls/video_mute_button.js';
 import { setVolumeSliderState } from './controls/volume_slider.js';
-import '../css/styles.css'
+import { globals } from './globals.js';
+import '../css/styles.css';
 
 let orchestrator, system, refresh;
 let updateStatusOngoing = false;
@@ -340,6 +341,7 @@ async function getStatus() {
 
   // re/draw the gui
   if (status) {
+    globals.state = status;
     document.getElementById("message").classList.add("hidden");
 
     // header
@@ -457,6 +459,8 @@ window.addEventListener("load", async (event) => {
 
   // start getStatus loop
   if (orchestrator && system) {
+    globals.orchestrator = orchestrator;
+    globals.system = system;
     getStatus();
   }
 

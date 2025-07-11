@@ -5,6 +5,7 @@
  *    
  *                                                    
  */
+import { updateStatus } from './main.js';
 let countdownTimeoutId;
 
 function mergeJSON(obj1, obj2) {
@@ -78,11 +79,24 @@ function useProgressBar(progress, duration, progressClass = 'warming', callback)
   }, (duration * 1000));
 }
 
+function appendUIInteractionJSON( baseJSON ) {
+  let obj = JSON.parse( baseJSON );
+  obj["environment_sensing"] = { "ui_interactions": { "occupancy_detected" :true } };
+  return JSON.stringify( obj );
+}
+
+function sendUIInteractionUpdate() {
+  const payload = JSON.stringify({ "environment_sensing":{ "ui_interactions": { "occupancy_detected" : true } } });
+  updateStatus(payload, null);
+}
+
 // Export functions
 export {
   mergeJSON,
   followPath,
   countdown,
   countdownTimeoutId,
-  useProgressBar
+  useProgressBar,
+  appendUIInteractionJSON,
+  sendUIInteractionUpdate
 };

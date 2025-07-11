@@ -6,6 +6,7 @@
  *                                                    
  */
 import { setupControlSet } from './main.js';
+import { sendUIInteractionUpdate } from './utilities.js';
 
 const modalTimeoutDurationDefault = 5; // 5 minutes 
 let modalTimeoutDuration = modalTimeoutDurationDefault ;
@@ -17,12 +18,16 @@ function openModal(e = null, modalId = null) {
   linkedModal.classList.remove('hidden');
   modalTimeoutDuration = parseFloat(linkedModal.getAttribute('data-timeout')) * 60000;
   timeoutModals();
+
+  sendUIInteractionUpdate();
 }
 
 function closeModal(e) {
   clearTimeout(modalTimeoutId);
   const parentmodal = e.target.getAttribute("data-dismiss");
   document.getElementById(parentmodal).classList.add("hidden");
+
+  sendUIInteractionUpdate();
 }
 
 // duration should be minutes

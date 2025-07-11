@@ -7,7 +7,7 @@
 import { updateStatus } from '../main.js';
 import { setButtonState } from './toggle_button.js';
 import { setPowerState, handleTogglePower } from './power_button.js';
-import { followPath, mergeJSON, useProgressBar } from '../utilities.js';
+import { followPath, mergeJSON, useProgressBar, appendUIInteractionJSON } from '../utilities.js';
 
 function setDisplaySourceOptionState(btn, state) {
   const container = btn.parentElement;
@@ -177,8 +177,7 @@ function handleDisplaySourceSelect(e) {
         }
       });
     }
-
-    updateStatus(postData, reset);
+    updateStatus(appendUIInteractionJSON(postData), reset);
   }
 
 }

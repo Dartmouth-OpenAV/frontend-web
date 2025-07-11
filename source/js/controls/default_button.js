@@ -5,6 +5,7 @@
  */
 
 import { updateStatus} from '../main.js';
+import { appendUIInteractionJSON } from '../utilities.js';
 
 function handleDefaultButton(e) {
 	// block clicks
@@ -26,7 +27,7 @@ function handleDefaultButton(e) {
 	// update backend
 	const value = btn.getAttribute('data-value') ? btn.getAttribute('data-value') : true ;
 	const payload = btn.getAttribute('data-path').replace(/<value>/, value);
-	updateStatus(payload, reset);
+	updateStatus(appendUIInteractionJSON( payload ), reset);
 }
 
 // Export functions

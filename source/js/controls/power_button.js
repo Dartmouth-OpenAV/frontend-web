@@ -8,7 +8,7 @@ import { updateStatus } from '../main.js';
 import { setButtonState } from './toggle_button.js';
 import { handleVideoMute, setVideoMuteButtonState } from './video_mute_button.js';
 import { setDisplaySourceOptionState, handleDisplaySourceSelect } from './display_source_radio.js';
-import { followPath, mergeJSON, countdown, countdownTimeoutId, useProgressBar } from '../utilities.js';
+import { followPath, mergeJSON, countdown, countdownTimeoutId, useProgressBar, appendUIInteractionJSON } from '../utilities.js';
 
 const shutdownWarningTime = 60; // seconds
 
@@ -171,7 +171,7 @@ function handleTogglePower(e) {
     // immediate visual feedback
     btn.classList.toggle('active');
 
-    updateStatus(postData, reset)
+    updateStatus(appendUIInteractionJSON(postData), reset)
   }
 
   // power on

@@ -5,6 +5,7 @@
  */
 
 import { refresh, availableTimers, updateStatus } from '../main.js';
+import { appendUIInteractionJSON } from '../utilities.js';
 
 function setVolumeSliderState(slider, level) {
   const color = slider.getAttribute('data-muted') === "true" ? 'var(--slider-muted)' : 'var(--theme-color)';
@@ -36,7 +37,7 @@ function handleVolumeSlider(e, isRecursion=false) {
 		handleVolumeOngoing = true ;
 		const path = slider.getAttribute('data-path') ;
 		const payload = path.replace( /<value>/, slider.value );
-		updateStatus(payload, function() {
+		updateStatus(appendUIInteractionJSON(payload), function() {
 			handleVolumeOngoing = false ;
 		} );
 	} else {

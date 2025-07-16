@@ -7,7 +7,8 @@ const WebpackShellPluginNext = require('webpack-shell-plugin-next');
 module.exports = {
   mode: 'production',
   entry: {
-    index: ['./source/js/main.js']
+    index: ['./source/js/main.js'],
+    zoom: ['./source/optional_modules/zoom_room/index.js']
   },
   output: {
     path: path.resolve(__dirname, 'public'),
@@ -46,6 +47,10 @@ module.exports = {
         generator: {
           filename: 'fonts/[hash][ext][query]'
         }
+      },
+      {
+        test: /\/optional_modules\/.+\.html$/,
+        use: ['html-loader'],
       },
     ]
   },

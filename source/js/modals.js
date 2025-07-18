@@ -8,16 +8,17 @@
 import { setupControlSet } from './main.js';
 import { sendUIInteractionUpdate } from './utilities.js';
 
-const modalTimeoutDurationDefault = 5; // 5 minutes 
-let modalTimeoutDuration = modalTimeoutDurationDefault ;
+const MODAL_TIMEOUT_DEFAULT = 5 * 60000 ; // 5 minutes as milliseconds
 let modalTimeoutId;
 
 function openModal(e = null, modalId = null) {
   const linkedModalId = e ? e.target.getAttribute('data-modal') : modalId;
   const linkedModal = document.getElementById(linkedModalId);
   linkedModal.classList.remove('hidden');
-  modalTimeoutDuration = parseFloat(linkedModal.getAttribute('data-timeout')) * 60000;
-  timeoutModals();
+  const timeoutDuration = linkedModal.getAttribute('data-timeout') ? 
+    parseFloat(linkedModal.getAttribute('data-timeout')) * 60000 // end users configure timeout in minutes
+    : MODAL_TIMEOUT_DEFAULT;
+  timeoutModals(timeoutDuration);
 
   sendUIInteractionUpdate();
 }
@@ -31,14 +32,14 @@ function closeModal(e) {
 }
 
 // duration should be minutes
-function timeoutModals() {
+function timeoutModals(duration) {
   clearTimeout(modalTimeoutId);
 
   modalTimeoutId = setTimeout(function () {
     document.querySelectorAll('.modal:not(.timeout-exempt)').forEach((modal) => {
       modal.classList.add('hidden');
     });
-  }, modalTimeoutDuration );
+  }, duration );
 }
 
 function setupModals(modals) {
@@ -73,7 +74,7 @@ function setupModals(modals) {
   }
 
   // // attach listener to Back buttons (note: clean this up in advanced_controls)
-  // document.querySelectorAll('.exit-modal').forEach((btn) => {
+  // document.querySelectorAll('.dismiss-modal').forEach((btn) => {
   //   btn.addEventListener('click', closeModal);
   //   btn.addEventListener('touchstart', closeModal);
   // });
@@ -90,7 +91,7 @@ function setupModals(modals) {
 // these basic open/close modal mechanisms
 function attachSharedModalListeners() {
   // attach listener to Back buttons (note: clean this up in advanced_controls)
-  document.querySelectorAll('.exit-modal').forEach((btn) => {
+  document.querySelectorAll('.dismiss-modal').forEach((btn) => {
     btn.addEventListener('click', closeModal);
     btn.addEventListener('touchstart', closeModal);
   });

@@ -877,7 +877,7 @@ h1#room-name {
 
 
 /* Advanced Controls */
-#advanced-modals-container .modal .exit-modal {
+#advanced-modals-container .modal .dismiss-modal {
   position: absolute;
   font-size: 2.4rem;
   padding: 1.5rem;

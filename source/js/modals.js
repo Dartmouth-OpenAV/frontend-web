@@ -48,7 +48,7 @@ function setupModals(modals) {
     if (!document.getElementById(modal)) {
       // render new modals
       // timeoutDuration is in minutes
-      const timeoutDuration = modals[modal].timeout_timer ? modals[modal].timeout_timer : modalTimeoutDurationDefault;
+      const timeoutDuration = modals[modal].timeout_timer ? modals[modal].timeout_timer : MODAL_TIMEOUT_DEFAULT;
       let html_blob = document.getElementById('advanced-modal-template').innerHTML
         .replace(/{{modalId}}/g, modal)
         .replace(/{{title}}/g, modals[modal].name)

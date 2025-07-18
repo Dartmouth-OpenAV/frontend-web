@@ -6,9 +6,16 @@ const WebpackShellPluginNext = require('webpack-shell-plugin-next');
 
 module.exports = {
   mode: 'production',
-  entry: {
-    index: ['./source/js/main.js'],
-    zoom: ['./source/optional_modules/zoom_room/index.js']
+  entry: { 
+    globals: './source/js/globals.js',
+    index: {
+      import: './source/js/main.js',
+      dependOn: 'globals', 
+    },
+    zoom: {
+      import: './source/optional_modules/zoom_room/index.js',
+      dependOn: 'globals',
+    }
   },
   output: {
     path: path.resolve(__dirname, 'public'),

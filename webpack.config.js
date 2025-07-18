@@ -15,6 +15,12 @@ module.exports = {
     filename: 'js/[name].[contenthash].bundle.js',
     clean: true
   },
+  optimization: {
+    splitChunks: {
+      chunks: 'all',
+      name: 'common',
+    },
+  },
   plugins: [
     new HtmlWebpackPlugin({
       template: 'source/index.html',

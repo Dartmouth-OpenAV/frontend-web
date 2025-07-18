@@ -15,9 +15,12 @@ import { globals } from './globals.js';
 import { throwClientError } from './global_error_catching.js';
 import '../css/styles.css'
 
+const REFRESH_WAIT = 5000 ;
 let orchestrator, system, refresh;
 let updateStatusOngoing = false;
 let retries = 2;
+
+let systemState;
 
 // pool of 10 volume slider timeout IDs (10 is an arbitrary upper limit on sliders per system)
 let timer1, timer2, timer3, timer4, timer5, timer6, timer7, timer8, timer9, timer10;
@@ -73,6 +76,9 @@ function setupControlSet(controlSetId, data, path, containerId, options = { 'hal
 
     const pathAttr = path.replace(/<id>/g, control);
     const channel = data.controls[control].hasOwnProperty('channel') ? data.controls[control].channel : "";
+    const otherAttributes = data.controls[control].hasOwnProperty('data_attributes') ?
+          data.controls[control].data_attributes.map(attr => `data-${attr}`).join(' ')
+          : '';
 
     // generate html based on button type
     let htmlBlob;
@@ -80,12 +86,14 @@ function setupControlSet(controlSetId, data, path, containerId, options = { 'hal
       htmlBlob = document.getElementById('mute-button-template').innerHTML
         .replace(/{{path}}/g, pathAttr)
         .replace(/{{control_set}}/g, controlSetName)
-        .replace(/{{muteState}}/g, "");
+        .replace(/{{muteState}}/g, "")
+        .replace(/{{otherAttributes}}/, otherAttributes);
     }
     if (type === "stateless_volume") {
       htmlBlob = document.getElementById('stateless-volume-control-template').innerHTML
         .replace(/{{path}}/g, pathAttr)
-        .replace(/{{control_set}}/g, controlSetName);
+        .replace(/{{control_set}}/g, controlSetName)
+        .replace(/{{otherAttributes}}/, otherAttributes);
     }
     if (type === "generic_toggle") {
       icon = document.getElementById(`${data.controls[control].icon}-icon-template`) ? document.getElementById(`${data.controls[control].icon}-icon-template`).innerHTML : "";
@@ -95,21 +103,24 @@ function setupControlSet(controlSetId, data, path, containerId, options = { 'hal
         .replace(/{{name}}/g, data.controls[control].name)
         .replace(/{{icon}}/g, icon)
         .replace(/{{no-icon}}/g, noiconClass)
-        .replace(/{{enabled}}/g, data.controls[control].value);
+        .replace(/{{enabled}}/g, data.controls[control].value)
+        .replace(/{{otherAttributes}}/, otherAttributes);
     }
     if (type === "mute") {
       htmlBlob = document.getElementById('mute-button-template').innerHTML
         .replace(/{{control_set}}/g, controlSetName)
         .replace(/{{path}}/g, pathAttr)
         .replace(/{{channel}}/g, channel)
-        .replace(/{{muteState}}/g, data.controls[control].value);
+        .replace(/{{muteState}}/g, data.controls[control].value)
+        .replace(/{{otherAttributes}}/, otherAttributes);
     }
     if (type === "volume") {
       htmlBlob = document.getElementById('volume-control-template').innerHTML
         .replace(/{{control_set}}/g, controlSetName)
         .replace(/{{path}}/g, pathAttr)
         .replace(/{{channel}}/g, channel)
-        .replace(/{{timerId}}/g, nextAvailableTimer);
+        .replace(/{{timerId}}/g, nextAvailableTimer)
+        .replace(/{{otherAttributes}}/, otherAttributes);
       nextAvailableTimer++;
     }
     if (type === "power") {
@@ -123,14 +134,16 @@ function setupControlSet(controlSetId, data, path, containerId, options = { 'hal
         .replace(/{{channel_name}}/g, channelName)
         .replace(/{{control_set}}/g, controlSetName)
         .replace(/{{duration}}/g, progressDuration)
-        .replace(/{{value}}/g, data.controls[control].value);
+        .replace(/{{value}}/g, data.controls[control].value)
+        .replace(/{{otherAttributes}}/, otherAttributes);
     }
     if (type === "video_mute") {
       htmlBlob = document.getElementById('video-pause-template').innerHTML
         .replace(/{{path}}/g, pathAttr)
         .replace(/{{channel}}/g, channel)
         .replace(/{{control_set}}/g, controlSetName)
-        .replace(/{{value}}/g, data.controls[control].value);
+        .replace(/{{value}}/g, data.controls[control].value)
+        .replace(/{{otherAttributes}}/, otherAttributes);
     }
     if (type === "radio" || type === "camera_preset_radio" || type === "display_source_radio" || type === "input_select") {
       // container 
@@ -156,6 +169,11 @@ function setupControlSet(controlSetId, data, path, containerId, options = { 'hal
         let icon = document.getElementById(`${data.controls[control].options[option].icon}-icon-template`) ? document.getElementById(`${data.controls[control].options[option].icon}-icon-template`).innerHTML : "";
         let noiconClass = icon === "" ? "no-icon" : "";
         const optionPath = pathAttr.replace(/\"value\"/, '"options"').replace(/<value>/, `{"${option}":{"value":<value>}}`);
+
+        const otherAttributes = data.controls[control].options[option].hasOwnProperty('data_attributes') ?
+          data.controls[control].options[option].data_attributes.map(attr => `data-${attr}`).join(' ')
+          : '';
+
         optionsBlob += optionTemplate
           .replace(/{{path}}/g, optionPath)
           .replace(/{{name}}/g, data.controls[control].options[option].name)
@@ -163,7 +181,8 @@ function setupControlSet(controlSetId, data, path, containerId, options = { 'hal
           .replace(/{{no-icon}}/g, noiconClass)
           .replace(/{{control_set}}/g, controlSetName)
           .replace(/{{option}}/g, option)
-          .replace(/{{value}}/g, data.controls[control].options[option].value);
+          .replace(/{{value}}/g, data.controls[control].options[option].value)
+          .replace(/{{otherAttributes}}/, otherAttributes);
       }
 
       htmlBlob = radioContainerTemplate.replace(/{{options}}/, optionsBlob);
@@ -171,12 +190,14 @@ function setupControlSet(controlSetId, data, path, containerId, options = { 'hal
     if (type === "pan_tilt") {
       htmlBlob = document.getElementById('pan-tilt-template').innerHTML
         .replace(/{{name}}/g, data.controls[control].name)
-        .replace(/{{path}}/g, pathAttr);
+        .replace(/{{path}}/g, pathAttr)
+        .replace(/{{otherAttributes}}/, otherAttributes);
     }
     if (type === "camera_zoom") {
       htmlBlob = document.getElementById('camera-zoom-template').innerHTML
         .replace(/{{name}}/g, data.controls[control].name)
-        .replace(/{{path}}/g, pathAttr);
+        .replace(/{{path}}/g, pathAttr)
+        .replace(/{{otherAttributes}}/, otherAttributes);
     }
     if (type === "modal_launcher") {
       icon = document.getElementById(`${data.controls[control].icon}-icon-template`) ? document.getElementById(`${data.controls[control].icon}-icon-template`).innerHTML : "";
@@ -186,7 +207,8 @@ function setupControlSet(controlSetId, data, path, containerId, options = { 'hal
         .replace(/{{icon}}/g, icon)
         .replace(/{{no-icon}}/g, noiconClass)
         .replace(/{{name}}/g, data.controls[control].name)
-        .replace(/{{modal}}/g, data.controls[control].modal);
+        .replace(/{{modal}}/g, data.controls[control].modal)
+        .replace(/{{otherAttributes}}/, otherAttributes);
     }
 
     // inject button into control set 
@@ -294,12 +316,12 @@ async function orchestratorRequest(url, options) {
   // Pause refresh loop
   window.clearTimeout(refresh); 
 
-  return fetch(url, { ...options, signal: AbortSignal.timeout(5000) })
+  return fetch(url, { ...options, signal: AbortSignal.timeout(REFRESH_WAIT) })
     .then(response => {
       // On success, restart the refresh loop and return JSON
       if ( response.status === 200 ) {
         retries = 2;
-        refresh = window.setTimeout(getStatus, 5000);
+        refresh = window.setTimeout(getStatus, REFRESH_WAIT);
         return response.json()
       }
 
@@ -311,7 +333,7 @@ async function orchestratorRequest(url, options) {
 
         // restart refresh loop
         retries = 2;
-        refresh = window.setTimeout(getStatus, 5000);
+        refresh = window.setTimeout(getStatus, REFRESH_WAIT);
         return false
       }
 
@@ -320,7 +342,7 @@ async function orchestratorRequest(url, options) {
         response.json().then(data => {
           console.log("Bad request: ", data);
         });
-        refresh = window.setTimeout(getStatus, 5000);
+        refresh = window.setTimeout(getStatus, REFRESH_WAIT);
         return false
       }
 
@@ -352,6 +374,7 @@ async function getStatus() {
   // re/draw the gui
   if (status) {
     globals.state = status;
+    systemState = status ; // DEV ONLY
     document.getElementById("message").classList.add("hidden");
 
     // header
@@ -362,28 +385,33 @@ async function getStatus() {
     document.getElementById( "maintenance" ).querySelector( "pre" ).innerHTML = JSON.stringify(status, null, 4) ;
 		document.getElementById( "maintenance" ).querySelector( ".timestamp" ).innerHTML = new Date() ;
 
-    // main controls
+    // check to see if configured controls need to be rendered
     let redraw = document.getElementById("main-controls").innerHTML ? false : true;
+    if ( redraw ) {
+      // main controls
+      if ( status.control_sets ) {
+        for (const controlSet in status.control_sets) {
+          let path = `{"control_sets":{"${controlSet}":{"controls":{"<id>":{"value":<value>}}}}}`;
 
-    if (redraw && status.control_sets) {
-      for (const controlSet in status.control_sets) {
-        let path = `{"control_sets":{"${controlSet}":{"controls":{"<id>":{"value":<value>}}}}}`;
-
-        // check for options
-        let options = { 'half_width': false, 'justify_content': false }; // defaults
-        if (status.control_sets[controlSet].display_options) {
-          for (let opt in status.control_sets[controlSet].display_options) {
-            options[opt] = status.control_sets[controlSet].display_options[opt];
+          // check for options
+          let options = { 'half_width': false, 'justify_content': false }; // defaults
+          if (status.control_sets[controlSet].display_options) {
+            for (let opt in status.control_sets[controlSet].display_options) {
+              options[opt] = status.control_sets[controlSet].display_options[opt];
+            }
           }
+
+          setupControlSet(controlSet, status.control_sets[controlSet], path, 'main-controls');
         }
-
-        setupControlSet(controlSet, status.control_sets[controlSet], path, 'main-controls');
       }
-    }
 
-    // advanced controls 
-    if ( redraw && status.modals )  {
-      setupModals(status.modals, false);
+      // render custom modals for advanced controls 
+      if ( status.modals )  {
+        setupModals(status.modals, false);
+      } 
+
+      // update uiReady flag so that modules can attach custom listeners to controls
+      globals.uiReady = true ;
     }
 
     // update controls to the current state
@@ -496,12 +524,20 @@ window.addEventListener("load", async (event) => {
   });
 });
 
+// export { 
+//   orchestrator,
+//   system,
+//   updateStatus, 
+//   setupControlSet,
+//   refresh, 
+//   availableTimers,
+//   orchestratorRequest
+// };
 export { 
-  orchestrator,
-  system,
+  refresh,
   updateStatus, 
-  setupControlSet,
-  refresh, 
+  setupControlSet, 
   availableTimers,
-  orchestratorRequest
+  orchestratorRequest,
+  systemState
 };

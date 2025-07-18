@@ -72,6 +72,23 @@ function setupModals(modals) {
     }
   }
 
+  // // attach listener to Back buttons (note: clean this up in advanced_controls)
+  // document.querySelectorAll('.exit-modal').forEach((btn) => {
+  //   btn.addEventListener('click', closeModal);
+  //   btn.addEventListener('touchstart', closeModal);
+  // });
+
+  // // attach listeners to reset timeout on any touch inside modal
+  // document.querySelectorAll('.modal:not(.timeout-exempt)').forEach((modal) => {
+  //   modal.addEventListener('click', timeoutModals);
+  //   modal.addEventListener('touchstart', timeoutModals);
+  // });
+  attachSharedModalListeners();
+}
+
+// Making this reusable so that optional modules with custom modals can use
+// these basic open/close modal mechanisms
+function attachSharedModalListeners() {
   // attach listener to Back buttons (note: clean this up in advanced_controls)
   document.querySelectorAll('.exit-modal').forEach((btn) => {
     btn.addEventListener('click', closeModal);
@@ -90,5 +107,6 @@ export {
   openModal,
   closeModal,
   timeoutModals,
-  setupModals
+  setupModals,
+  attachSharedModalListeners
 };

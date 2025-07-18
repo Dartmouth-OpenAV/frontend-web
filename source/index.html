@@ -30,8 +30,11 @@
 <!--           -->
 <!-- modals    -->
 <!--           -->
-<!-- Custom modals bucket -->
+<!-- Bucket for user-configured custom modals -->
 <div id="advanced-modals-container"></div>
+
+<!-- Bucket for modals added by optional modules (plugins) -->
+<div id="plugin-modals-container"></div>
 
 <!-- Shutdown confirmation modal -->
 <div id="shutdown-confirmation" class="modal modal-full hidden timeout-exempt">
@@ -91,7 +94,7 @@
 <!-- templates -->
 <!--           -->
 <script type="text/template" id="pan-tilt-template">
-	<div class="pan-tilt-wrapper control" data-path='{{path}}' >
+	<div class="pan-tilt-wrapper control" data-path='{{path}}' {{otherAttributes}}>
 		<div class="pan-tilt-background-mask"></div>
 		<button aria-label="{{name}} pan left" class="pan-left" data-value='"left"' data-allow-events>
 			<span class="arrow no-pointer-events"></span>
@@ -110,7 +113,7 @@
 </script>
 
 <script type="text/template" id="camera-zoom-template">
-	<div class="button-group camera-zoom control" data-path='{{path}}'>
+	<div class="button-group camera-zoom control" data-path='{{path}}' {{otherAttributes}}>
 		<button aria-label="{{name}} zoom out" title="{{name}} zoom out" class="icon-only volume-stepper" data-path='{{path}}' data-value='"out"' data-allow-events>
 			<svg
 			   viewBox="0 0 99.999997 99.999997"
@@ -159,7 +162,7 @@
 </script>
 
 <script type="text/template" id="generic-button-template">
-	<button class="full control" data-value="{{enabled}}" data-path='{{path}}' data-allow-events>
+	<button class="full control" data-value="{{enabled}}" data-path='{{path}}' data-allow-events {{otherAttributes}}>
 		<div class="button-label">{{name}}</div>
 		
 		<div class="icon-container {{no-icon}}">
@@ -169,7 +172,7 @@
 </script>
 
 <script type="text/template" id="power-button-template">
-	<button aria-label="{{control_set}} power" class="full power-button control" data-path='{{path}}' data-value='{{value}}' data-channel='{{channel}}' data-channel-name='{{channel_name}}' data-duration='{{duration}}' data-allow-events>
+	<button aria-label="{{control_set}} power" class="full power-button control" data-path='{{path}}' data-value='{{value}}' data-channel='{{channel}}' data-channel-name='{{channel_name}}' data-duration='{{duration}}' data-allow-events {{otherAttributes}}>
 		<div class="button-label">{{name}}</div>
 		<div class="icon-container">
 			<svg   
@@ -195,7 +198,7 @@
 </script>
 
 <script type="text/template" id="video-pause-template">
-	<button aria-label="{{control_set}} pause video" class="full pause-button control" data-path='{{path}}' data-value="{{value}}" data-channel="{{channel}}" data-allow-events>
+	<button aria-label="{{control_set}} pause video" class="full pause-button control" data-path='{{path}}' data-value="{{value}}" data-channel="{{channel}}" data-allow-events {{otherAttributes}}>
 		<div class="button-label">Hide video</div>
 		<div class="icon-container">
 			<svg
@@ -239,7 +242,7 @@
 </script>
 
 <script type="text/template" id="mute-button-template">
-	<button class="icon-only control mute" title="{{control_set}} mute" aria-label="{{title}} mute" data-channel="{{channel}}" data-path='{{path}}' data-value="{{muteState}}" data-allow-events>
+	<button class="icon-only control mute" title="{{control_set}} mute" aria-label="{{title}} mute" data-channel="{{channel}}" data-path='{{path}}' data-value="{{muteState}}" data-allow-events {{otherAttributes}}>
 		<svg
 		   class="icon"
 		   viewBox="0 0 99.999997 99.999997">
@@ -272,11 +275,11 @@
 </script>
 
 <script type="text/template" id="volume-control-template">
-	<input title="{{control_set}} volume slider" aria-label="{{control_set}} volume slider" type="range" class="slider control" step="5" data-channel="{{channel}}" data-path='{{path}}' data-timer="{{timerId}}" data-allow-events>
+	<input title="{{control_set}} volume slider" aria-label="{{control_set}} volume slider" type="range" class="slider control" step="5" data-channel="{{channel}}" data-path='{{path}}' data-timer="{{timerId}}" data-allow-events {{otherAttributes}}>
 </script>
 
 <script type="text/template" id="stateless-volume-control-template">
-	<div class="button-group control" data-path='{{path}}'>
+	<div class="button-group control" data-path='{{path}}' {{otherAttributes}}>
 		<button title="{{control_set}} volume up" aria-label="{{control_set}} volume up" class="icon-only volume-stepper" data-path='{{path}}' data-value='"down"' data-allow-events>
 			<svg
 			   viewBox="0 0 99.999997 99.999997"
@@ -316,7 +319,7 @@
 </script>
 
 <script type="text/template" id="modal-launcher-button-template">
-	<button aria-label="Launch {{name}} modal" class="full control" data-modal="{{modal}}">
+	<button aria-label="Launch {{name}} modal" class="full control" data-modal="{{modal}}" {{otherAttributes}}>
 		<div class="button-label">{{name}}</div>
 		<div class="icon-container {{no-icon}}">
 			{{icon}}

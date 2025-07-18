@@ -1,0 +1,17 @@
+<div id="zoom-room-notification" class="banner hidden">
+  <div class="icon-container">{{zoom_icon}}</div>
+  <p><span class="feedback-message">In a meeting:</span> <span class="meeting-name">{{meeting_name}}</span></p>
+  <button class="text-only hidden" name="leave-meeting"><h2>Leave</h2></button>
+</div>
+
+<div id="zoom-room-audio-warning" class="banner warning hidden">
+  <div class="icon-container">{{mic_icon}}</div>
+  <p><span class="feedback-message">Warning: The Zoom Room is muted. Remote participants cannot hear you.</span></p>
+  <button class="text-only" data-path='{"zoom_room" : { "mute" : false }}'><h2>Unmute</h2></button>
+</div>
+
+<div id="zoom-room-camera-warning" class="banner warning hidden">
+  <div class="icon-container">{{zoom_icon}}</div>
+  <p><span class="feedback-message">Warning: The Zoom Room camera is off. Remote participants cannot see you.</span></p>
+  <button class="text-only" data-path='{"zoom_room" : { "camera_mute" : false }}'><h2>Start video</h2></button>
+</div>

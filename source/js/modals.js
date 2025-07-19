@@ -10,15 +10,19 @@ import { sendUIInteractionUpdate } from './utilities.js';
 
 const MODAL_TIMEOUT_DEFAULT = 5 * 60000 ; // 5 minutes as milliseconds
 let modalTimeoutId;
+let timeoutDuration = MODAL_TIMEOUT_DEFAULT;
 
 function openModal(e = null, modalId = null) {
+  // open requested modal
   const linkedModalId = e ? e.target.getAttribute('data-modal') : modalId;
   const linkedModal = document.getElementById(linkedModalId);
   linkedModal.classList.remove('hidden');
-  const timeoutDuration = linkedModal.getAttribute('data-timeout') ? 
+
+  // reset the auto close timeout
+  timeoutDuration = linkedModal.getAttribute('data-timeout') ? 
     parseFloat(linkedModal.getAttribute('data-timeout')) * 60000 // end users configure timeout in minutes
     : MODAL_TIMEOUT_DEFAULT;
-  timeoutModals(timeoutDuration);
+  timeoutModals();
 
   sendUIInteractionUpdate();
 }
@@ -31,23 +35,27 @@ function closeModal(e) {
   sendUIInteractionUpdate();
 }
 
-// duration should be minutes
-function timeoutModals(duration) {
+// Note on timeoutModals: 
+// Although multiple modals may be unhidden, they share one timeout (for simplicity
+// and because if someone abandons the touch screen it doesn't matter if the modals
+// close in sequential order), so the last opened modal resets the global timeout 
+// duration for all open modals
+function timeoutModals(e=null) {
   clearTimeout(modalTimeoutId);
 
   modalTimeoutId = setTimeout(function () {
     document.querySelectorAll('.modal:not(.timeout-exempt)').forEach((modal) => {
       modal.classList.add('hidden');
     });
-  }, duration );
+  }, timeoutDuration );
 }
+
 
 function setupModals(modals) {
   for (const modal in modals) {
     // if the modal has already been created, exit
     if (!document.getElementById(modal)) {
       // render new modals
-      // timeoutDuration is in minutes
       const timeoutDuration = modals[modal].timeout_timer ? modals[modal].timeout_timer : MODAL_TIMEOUT_DEFAULT;
       let html_blob = document.getElementById('advanced-modal-template').innerHTML
         .replace(/{{modalId}}/g, modal)
@@ -73,17 +81,6 @@ function setupModals(modals) {
     }
   }
 
-  // // attach listener to Back buttons (note: clean this up in advanced_controls)
-  // document.querySelectorAll('.dismiss-modal').forEach((btn) => {
-  //   btn.addEventListener('click', closeModal);
-  //   btn.addEventListener('touchstart', closeModal);
-  // });
-
-  // // attach listeners to reset timeout on any touch inside modal
-  // document.querySelectorAll('.modal:not(.timeout-exempt)').forEach((modal) => {
-  //   modal.addEventListener('click', timeoutModals);
-  //   modal.addEventListener('touchstart', timeoutModals);
-  // });
   attachSharedModalListeners();
 }
 

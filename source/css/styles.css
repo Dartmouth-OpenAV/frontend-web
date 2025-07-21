@@ -980,18 +980,18 @@ h1#room-name {
   align-items: center;
 }
 
-form#join_meeting_by_id {
+form#join-meeting-by-id {
   margin-top: 5rem;
 }
-form#join_meeting_by_id .form-row {
+form#join-meeting-by-id .form-row {
   text-align: left;
 }
-form#join_meeting_by_id label {
+form#join-meeting-by-id label {
   display: inline-block;
   width: 15.5rem;
   margin-left: calc(50% - 35rem);
 }
-form#join_meeting_by_id #form-actions button {
+form#join-meeting-by-id #form-actions button {
   padding: 1.5rem 2.5rem;
 }
 
@@ -1001,10 +1001,10 @@ form#join_meeting_by_id #form-actions button {
   animation-name: slideup;
   top: -40rem;
 }
-#manual-zoom-prompt.focused form#join_meeting_by_id {
+#manual-zoom-prompt.focused form#join-meeting-by-id {
   margin-top: 0rem;
 }
-#manual-zoom-prompt.focused form#join_meeting_by_id #form-actions button {
+#manual-zoom-prompt.focused form#join-meeting-by-id #form-actions button {
   margin-top: 0.5rem;
 }
 
@@ -1242,7 +1242,7 @@ form#join_meeting_by_id #form-actions button {
   #manual-zoom-prompt input {
     width: 33rem;
   }
-  form#join_meeting_by_id label {
+  form#join-meeting-by-id label {
     width: 13rem;
     margin-left: calc(50% - 30rem);
   }
@@ -1321,15 +1321,15 @@ form#join_meeting_by_id #form-actions button {
   h2 {
     font-size: 2rem;
   }
-  form#join_meeting_by_id .form-row {
+  form#join-meeting-by-id .form-row {
     flex-wrap: wrap;
   }
-  form#join_meeting_by_id label {
+  form#join-meeting-by-id label {
     width: 100%;
     margin-left: 0;
     padding-bottom: 1rem;
   }
-  form#join_meeting_by_id input {
+  form#join-meeting-by-id input {
     flex-grow: 1;
   }
   #sip-toggle {

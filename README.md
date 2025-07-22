@@ -60,7 +60,11 @@ The core functionality of frontend-web includes:
 - Direct requests to the orchestrator (updateStatus function is exported for modules to use as request wrapper)
 
 **Optional modules:**
-If you need to add user feedback or inputs that aren't available in the Core functions, eg. a form to send a help request, or to join a web conference, a module is probably the right choice. Modules can add functions to the interface through:
+If you need to add user feedback or inputs that aren't available in the Core functions, eg. a form to send a help request, or to join a web conference, a module is probably the right choice. 
+
+Module source directories should be added to `/source/optional_modules/<your_plugin>`. Within your module directory your code can be organized any way you want, but you can use the zoom_room module as a model.
+
+Modules can add functions to the interface through:
 1. **Custom HTML Modals**
 
   The content of your modals is not restricted but should follow style guidelines, and use standard controls/inputs when possible.
@@ -82,7 +86,7 @@ document.getElementById('plugin-modals-container').insertAdjacentHTML('beforeend
 
 3. **Custom CSS**
 
-  To style custom HTML elements added by the module (not to overwrite core styles!)
+  To style custom HTML elements added by the module (not to overwrite core styles!). Any .css file in your module will be automatically picked up and bundled by webpack.
 
 4. **Javascript event listeners on controls**
 
@@ -109,7 +113,7 @@ function addMyEventListeners() {
   if ( !globals.uiReady ) {
     if ( guiInitiationTries <= MAX_TRIES ) {
       guiInitiationTries++;
-      return setTimeout( initiateZoomGUI, 500 )
+      return setTimeout( addMyEventListeners, 500 )
     }
   }
 
@@ -126,8 +130,6 @@ window.addEventListener("load", addMyEventListeners);
 **Important:** Don't assign window.onload directly. eg `window.onload = () => { ... }` <-- NO!!! We are using multiple entrypoints and each one needs to be able to add its own window load listener. So the correct way to do this is: `window.addEventListener('load', myCustomHandler)` <-- YES!
 
 **Important:** Don't set globals in any of your code. Treat globals as read only. 
-
-Module source directories should be added to `/source/optional_modules/<your_plugin>`. Within your module directory your code can be organized any way you want, but you can use the zoom_room module as a model.
 
 
 #### Adding to the webpack build

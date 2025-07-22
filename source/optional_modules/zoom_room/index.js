@@ -24,10 +24,10 @@ function joinZoomMeeting(meetingId, password, callback=null) {
   clearTimeout(refresh);
 
   // User feedback: show banner
-  const banner = document.getElementById( 'zoom-room-notification' );
-	banner.querySelector( '.feedback-message' ).innerHTML = 'Joining meeting ' ;
-	// zoomBanner.querySelector( '.meeting-name' ).innerHTML = meetingId ;
-	banner.classList.remove( 'hidden' ) ;
+  // const banner = document.getElementById( 'zoom-room-notification' );
+	// banner.querySelector( '.feedback-message' ).innerHTML = 'Joining meeting ' ;
+	// banner.querySelector( '.meeting-name' ).innerHTML = meetingId ;
+	// banner.classList.remove( 'hidden' ) ;
 
   // bump main content for banner
 
@@ -48,9 +48,9 @@ function leaveZoomMeeting(callback=null) {
   clearTimeout(refresh);
 
   // User feedback: update banner
-  const banner = document.getElementById( 'zoom-room-notification' );
-  banner.querySelector( '.feedback-message' ).innerHTML = 'Leaving meeting ' ;
-  banner.classList.remove( 'hidden' ) ;
+  // const banner = document.getElementById( 'zoom-room-notification' );
+  // banner.querySelector( '.feedback-message' ).innerHTML = 'Leaving meeting ' ;
+  // banner.classList.remove( 'hidden' ) ;
 
   // bump main content for banner
 
@@ -177,7 +177,7 @@ function openZoomPrompt() {
 }
 
 function displayZoomStatus() {
-
+  console.log("time to update the Zoom banner ...")
 }
 
 function getZoomData() {
@@ -189,6 +189,7 @@ function getZoomData() {
 
     // update the gui to reflect current state, check for abandoned meeting etc.
     // ...
+    // displayZoomStatus();
 
     refresh = window.setTimeout(getZoomData, REFRESH_WAIT);  
   }

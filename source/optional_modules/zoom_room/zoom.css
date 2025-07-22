@@ -1,0 +1,250 @@
+:root {
+  --zoom-blue: rgb(22, 123, 222) ;
+}
+
+#sharing-key-container {
+  font-size: 2.4rem;
+  line-height: 1.6rem;
+  padding: 1rem;
+  color: var(--gray-lighter);
+  border-radius: 0.8rem;
+  position: fixed;
+  text-align: center;
+  top: 1.1rem;
+  right: 2.5rem;
+  z-index: 120;
+}
+#sharing-key-container .icon-container {
+  display: none;
+  height: 2.4rem;
+  width: 2.4rem;
+  vertical-align: middle;
+}
+#sharing-key-container span {
+  vertical-align: middle;
+}
+#sharing-key-container .shape, #sharing-key-container .outline {
+  fill: var(--gray-lighter);
+}
+
+.banner#zoom-room-notification {
+  background-color: var(--zoom-blue);
+  border: 0.1rem solid #1161b0;
+}
+.banner#zoom-room-notification button {
+  color: var(--zoom-blue);
+}
+.banner#zoom-room-notification button.active {
+  background-color: #3b94ec;
+}
+
+#manual-zoom-prompt input {
+  font-size: 3rem;
+  width: 37rem;
+  padding: 1.5rem;
+  border: 0.3rem solid var(--theme-color);
+  border-radius: 1rem;
+  background-color: var(--gray-base);
+  color: var(--gray-lighter);
+}
+#manual-zoom-prompt label {
+  font-size: 2.8rem;
+  margin-right: 1rem;
+}
+
+#share-screen-zoom-prompt .zoom-sharing-key {
+  border-radius: 1.5rem;
+  font-size: 8rem;
+  letter-spacing: 2.4rem;
+  margin-left: 2.4rem;
+}
+#share-screen-zoom-prompt .zoom-sharing-key.not-available {
+  letter-spacing: normal;
+  margin-left: 0;
+}
+#share-screen-zoom-prompt .icon-container {
+  height: 8rem;
+  width: 8rem;
+  position: relative;
+  top: 2.5rem;
+  display: inline-flex;
+  margin-top: -2rem;
+  margin-bottom: 2.5rem;
+}
+#share-screen-zoom-prompt .icon-container .shape {
+  fill: #fff;
+  stroke: #fff;
+}
+
+
+/* Zoom join form */
+@keyframes slideup {
+  from {
+    top: 0;
+  }
+  to {
+    top: -26rem;
+  }
+}
+.form-row {
+  position: relative;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+form#join-meeting-by-id {
+  margin-top: 5rem;
+}
+form#join-meeting-by-id .form-row {
+  text-align: left;
+}
+form#join-meeting-by-id label {
+  display: inline-block;
+  width: 15.5rem;
+  margin-left: calc(50% - 35rem);
+}
+form#join-meeting-by-id #form-actions button {
+  padding: 1.5rem 2.5rem;
+}
+
+#manual-zoom-prompt.focused {
+  height: calc(100% + 43rem);
+  animation-duration: 0.5s;
+  animation-name: slideup;
+  top: -40rem;
+}
+#manual-zoom-prompt.focused form#join-meeting-by-id {
+  margin-top: 0rem;
+}
+#manual-zoom-prompt.focused form#join-meeting-by-id #form-actions button {
+  margin-top: 0.5rem;
+}
+
+
+
+#autoleave-zoom-prompt {
+  background-color: var(--theme-color);
+  color: #fff;
+}
+
+#autoleave-zoom-prompt .shape {
+  fill: #fff;
+  stroke: #fff;
+}
+#autoleave-zoom-prompt button {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+#autoleave-zoom-prompt button.focus, #autoleave-zoom-prompt button.active {
+  background-color: #fff;
+}
+#autoleave-zoom-prompt button.focus .button-label, #autoleave-zoom-prompt button.active .button-label {
+  color: #9500d2;
+}
+#autoleave-zoom-prompt button.disabled {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+#autoleave-zoom-prompt button.disabled .button-label {
+  color: #9103cc;
+}
+#autoleave-zoom-prompt button.active.disabled {
+  background-color: #cccccc;
+}
+#autoleave-zoom-prompt button.active.disabled .button-label {
+  color: var(--disabled-element);
+}
+
+#manual-zoom-prompt.hidden, #scheduled-zoom-prompt.hidden, #leave-zoom-prompt.hidden, #autoleave-zoom-prompt.hidden, #share-screen-zoom-prompt.hidden {
+  display: none;
+}
+
+
+#sip-toggle {
+  display: inline-flex;
+  margin-left: 2rem;
+}
+#sip-toggle button {
+  margin: 0;
+  padding: 1rem;
+  align-items: center;
+}
+#sip-toggle button .button-label {
+  font-size: 1.92rem;
+}
+#sip-toggle button:first-of-type {
+  border-radius: 0.6rem 0 0 0.6rem;
+}
+#sip-toggle button:nth-of-type(2) {
+  border-radius: 0 0.6rem 0.6rem 0;
+}
+#sip-toggle button.full-horizontal .icon-container {
+  width: 3rem;
+}
+
+/* Responsive */
+@media (min-width: 1450px) {
+  #sharing-key-container {
+    right: unset;
+    left: calc(50% + 41.5rem);
+  }
+}
+
+@media (max-width: 880px) {
+  #sharing-key-container .icon-container {
+    display: inline-block;
+  }
+  #sharing-key-container .label {
+    display: none;
+  }
+}
+
+@media (max-width: 837px) {
+  #sip-toggle button {
+    font-size: 2rem;
+  }
+  #manual-zoom-prompt label {
+    font-size: 2.3rem;
+    margin-right: 0;
+  }
+  #manual-zoom-prompt input {
+    width: 33rem;
+  }
+  form#join-meeting-by-id label {
+    width: 13rem;
+    margin-left: calc(50% - 30rem);
+  }
+}
+
+@media (max-width: 820px) {
+  #sharing-key-container {
+    top: 0.5rem;
+  }
+  #sip-toggle .icon-container {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  form#join-meeting-by-id .form-row {
+    flex-wrap: wrap;
+  }
+  form#join-meeting-by-id label {
+    width: 100%;
+    margin-left: 0;
+    padding-bottom: 1rem;
+  }
+  form#join-meeting-by-id input {
+    flex-grow: 1;
+  }
+  #sip-toggle {
+    position: absolute;
+    right: 0;
+    top: -1rem;
+  }
+}
+
+@media (max-width: 600px) {
+  #sharing-key-container {
+    display: none;
+  }
+}

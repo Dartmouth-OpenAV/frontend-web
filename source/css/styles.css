@@ -38,7 +38,7 @@
   --inactive-element: var(--gray-light) ;
   --disabled-element: #595959;
   --warning-red: #e9243e;
-  --zoom-blue: rgb(22, 123, 222) ;
+  /* --zoom-blue: rgb(22, 123, 222) ; */
 
   --slider-background: #3a3a3a ;
   --slider-muted: #595959 ;
@@ -841,37 +841,37 @@ h1#room-name {
 #shutdown-countdown, #shutdown-notification {
   min-height: 13.5rem;
 }
-#autoshutdown-warning, #autoleave-zoom-prompt {
+#autoshutdown-warning {
   background-color: var(--theme-color);
   color: #fff;
 }
-#autoshutdown-warning .shape, #autoleave-zoom-prompt .shape {
+#autoshutdown-warning .shape {
   fill: #fff;
   stroke: #fff;
 }
-#autoshutdown-warning button, #autoleave-zoom-prompt button {
+#autoshutdown-warning button {
   background-color: rgba(0, 0, 0, 0.2);
 }
-#autoshutdown-warning button.focus, #autoshutdown-warning button.active, #autoleave-zoom-prompt button.focus, #autoleave-zoom-prompt button.active {
+#autoshutdown-warning button.focus, #autoshutdown-warning button.active {
   background-color: #fff;
 }
-#autoshutdown-warning button.focus .button-label, #autoshutdown-warning button.active .button-label, #autoleave-zoom-prompt button.focus .button-label, #autoleave-zoom-prompt button.active .button-label {
+#autoshutdown-warning button.focus .button-label, #autoshutdown-warning button.active .button-label {
   color: #9500d2;
 }
-#autoshutdown-warning button.disabled, #autoleave-zoom-prompt button.disabled {
+#autoshutdown-warning button.disabled {
   background-color: rgba(255, 255, 255, 0.1);
 }
-#autoshutdown-warning button.disabled .button-label, #autoleave-zoom-prompt button.disabled .button-label {
+#autoshutdown-warning button.disabled .button-label {
   color: #9103cc;
 }
-#autoshutdown-warning button.active.disabled, #autoleave-zoom-prompt button.active.disabled {
+#autoshutdown-warning button.active.disabled {
   background-color: #cccccc;
 }
-#autoshutdown-warning button.active.disabled .button-label, #autoleave-zoom-prompt button.active.disabled .button-label {
+#autoshutdown-warning button.active.disabled .button-label {
   color: var(--disabled-element);
 }
 
-#shutdown-confirmation.hidden, #autoshutdown-warning.hidden, #manual-zoom-prompt.hidden, #scheduled-zoom-prompt.hidden, #leave-zoom-prompt.hidden, #autoleave-zoom-prompt.hidden, #share-screen-zoom-prompt.hidden, #zoom-room-panel-prompt.hidden {
+#shutdown-confirmation.hidden, #autoshutdown-warning.hidden {
   display: none;
 }
 
@@ -883,151 +883,6 @@ h1#room-name {
   padding: 1.5rem;
   background-color: var(--theme-color);
   color: #fff;
-}
-
-
-
-
-
-/* Zoom Integration Components */
-#sharing-key-container {
-  font-size: 2.4rem;
-  line-height: 1.6rem;
-  padding: 1rem;
-  color: var(--gray-lighter);
-  border-radius: 0.8rem;
-  position: fixed;
-  text-align: center;
-  top: 1.1rem;
-  right: 2.5rem;
-  z-index: 120;
-}
-#sharing-key-container .icon-container {
-  display: none;
-  height: 2.4rem;
-  width: 2.4rem;
-  vertical-align: middle;
-}
-#sharing-key-container span {
-  vertical-align: middle;
-}
-#sharing-key-container .shape, #sharing-key-container .outline {
-  fill: var(--gray-lighter);
-}
-
-.banner#zoom-room-notification {
-  background-color: var(--zoom-blue);
-  border: 0.1rem solid #1161b0;
-}
-.banner#zoom-room-notification button {
-  color: var(--zoom-blue);
-}
-.banner#zoom-room-notification button.active {
-  background-color: #3b94ec;
-}
-
-#manual-zoom-prompt input {
-  font-size: 3rem;
-  width: 37rem;
-  padding: 1.5rem;
-  border: 0.3rem solid var(--theme-color);
-  border-radius: 1rem;
-  background-color: var(--gray-base);
-  color: var(--gray-lighter);
-}
-#manual-zoom-prompt label {
-  font-size: 2.8rem;
-  margin-right: 1rem;
-}
-
-#share-screen-zoom-prompt .zoom-sharing-key {
-  border-radius: 1.5rem;
-  font-size: 8rem;
-  letter-spacing: 2.4rem;
-  margin-left: 2.4rem;
-}
-#share-screen-zoom-prompt .zoom-sharing-key.not-available {
-  letter-spacing: normal;
-  margin-left: 0;
-}
-#share-screen-zoom-prompt .icon-container {
-  height: 8rem;
-  width: 8rem;
-  position: relative;
-  top: 2.5rem;
-  display: inline-flex;
-  margin-top: -2rem;
-  margin-bottom: 2.5rem;
-}
-#share-screen-zoom-prompt .icon-container .shape {
-  fill: #fff;
-  stroke: #fff;
-}
-
-/* Zoom join form */
-@keyframes slideup {
-  from {
-    top: 0;
-  }
-  to {
-    top: -26rem;
-  }
-}
-.form-row {
-  position: relative;
-  margin-bottom: 1rem;
-  display: flex;
-  align-items: center;
-}
-
-form#join-meeting-by-id {
-  margin-top: 5rem;
-}
-form#join-meeting-by-id .form-row {
-  text-align: left;
-}
-form#join-meeting-by-id label {
-  display: inline-block;
-  width: 15.5rem;
-  margin-left: calc(50% - 35rem);
-}
-form#join-meeting-by-id #form-actions button {
-  padding: 1.5rem 2.5rem;
-}
-
-#manual-zoom-prompt.focused {
-  height: calc(100% + 43rem);
-  animation-duration: 0.5s;
-  animation-name: slideup;
-  top: -40rem;
-}
-#manual-zoom-prompt.focused form#join-meeting-by-id {
-  margin-top: 0rem;
-}
-#manual-zoom-prompt.focused form#join-meeting-by-id #form-actions button {
-  margin-top: 0.5rem;
-}
-
-#sip-toggle {
-  display: inline-flex;
-  margin-left: 2rem;
-}
-#sip-toggle button {
-  margin: 0;
-  padding: 1rem;
-  align-items: center;
-}
-#sip-toggle button .button-label {
-  font-size: 1.92rem;
-}
-#sip-toggle button:first-of-type {
-  border-radius: 0.6rem 0 0 0.6rem;
-}
-#sip-toggle button:nth-of-type(2) {
-  border-radius: 0 0.6rem 0.6rem 0;
-}
-#sip-toggle button.full-horizontal .icon-container {
-  width: 3rem;
 }
 
 
@@ -1108,10 +963,6 @@ form#join-meeting-by-id #form-actions button {
     margin-left: auto;
     margin-right: auto;
   }
-  #sharing-key-container {
-    right: unset;
-    left: calc(50% + 41.5rem);
-  }
   .secondary-control-group.half-width.justify-content .controls-wrapper {
     justify-content: unset;
   }
@@ -1128,11 +979,13 @@ form#join-meeting-by-id #form-actions button {
     width: 28rem;
   }
 }
+
 @media (min-width: 1200px) {
   #maintenance {
     left: calc(50% - 480px);
   }
 }
+
 @media (max-width: 1449px) {
   #room-header {
     padding-left: 3.6rem;
@@ -1152,6 +1005,7 @@ form#join-meeting-by-id #form-actions button {
     margin-top: 3rem;
   }
 }
+
 @media (max-width: 1081px) {
   .half-width, .secondary-control-group.half-width {
     width: calc(50% - 1rem);
@@ -1168,6 +1022,7 @@ form#join-meeting-by-id #form-actions button {
     width: 23rem;
   }
 }
+
 @media (max-width: 1010px) {
   .secondary-control-group {
     margin-bottom: 1.5rem;
@@ -1206,6 +1061,7 @@ form#join-meeting-by-id #form-actions button {
     font-size: 2.1rem;
   }
 }
+
 @media (max-width: 945px) {
   .secondary-control-group.half-width {
     width: 100%;
@@ -1214,14 +1070,7 @@ form#join-meeting-by-id #form-actions button {
     justify-content: flex-start;
   }
 }
-@media (max-width: 880px) {
-  #sharing-key-container .icon-container {
-    display: inline-block;
-  }
-  #sharing-key-container .label {
-    display: none;
-  }
-}
+
 @media (max-width: 837px) {
   .modal.modal-full {
     padding: 3rem 1rem;
@@ -1232,21 +1081,8 @@ form#join-meeting-by-id #form-actions button {
   .modal.modal-full p {
     font-size: 3rem;
   }
-  #sip-toggle button {
-    font-size: 2rem;
-  }
-  #manual-zoom-prompt label {
-    font-size: 2.3rem;
-    margin-right: 0;
-  }
-  #manual-zoom-prompt input {
-    width: 33rem;
-  }
-  form#join-meeting-by-id label {
-    width: 13rem;
-    margin-left: calc(50% - 30rem);
-  }
 }
+
 @media (max-width: 820px) {
   h2 {
     font-size: 2.2rem;
@@ -1282,9 +1118,6 @@ form#join-meeting-by-id #form-actions button {
   h1#room-name {
     font-size: 2.5rem;
   }
-  #sharing-key-container {
-    top: 0.5rem;
-  }
   .banner .icon-container {
     height: 4rem;
     width: 4rem;
@@ -1313,31 +1146,14 @@ form#join-meeting-by-id #form-actions button {
   .camera-zoom .button-label {
     font-size: 2rem;
   }
-  #sip-toggle .icon-container {
-    display: none;
-  }
 }
+
 @media (max-width: 720px) {
   h2 {
     font-size: 2rem;
   }
-  form#join-meeting-by-id .form-row {
-    flex-wrap: wrap;
-  }
-  form#join-meeting-by-id label {
-    width: 100%;
-    margin-left: 0;
-    padding-bottom: 1rem;
-  }
-  form#join-meeting-by-id input {
-    flex-grow: 1;
-  }
-  #sip-toggle {
-    position: absolute;
-    right: 0;
-    top: -1rem;
-  }
 }
+
 @media (max-width: 600px) {
   .counter {
     font-size: 4.5rem;
@@ -1348,9 +1164,6 @@ form#join-meeting-by-id #form-actions button {
   }
   button.text-only .button-label {
     font-size: 2.5rem;
-  }
-  #sharing-key-container {
-    display: none;
   }
   button.full {
     min-width: 10rem;
@@ -1365,6 +1178,7 @@ form#join-meeting-by-id #form-actions button {
     top: unset;
   }
 }
+
 @media (max-width: 480px) {
   .progress {
     display: none;

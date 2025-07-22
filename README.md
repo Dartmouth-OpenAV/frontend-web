@@ -61,7 +61,8 @@ The core functionality of frontend-web includes:
 
 **Optional modules:**
 If you need to add user feedback or inputs that aren't available in the Core functions, eg. a form to send a help request, or to join a web conference, a module is probably the right choice. Modules can add functions to the interface through:
-1. Custom HTML Modals
+1. **Custom HTML Modals**
+
   The content of your modals is not restricted but should follow style guidelines, and use standard controls/inputs when possible.
   When injecting your custom modal HTML into the DOM, insert it into the `<div id="plugin-modals-container"></div>` element. Do NOT overwrite the innerHTML of that element as other modules will be inserting HTML there. Example javascript:
 ```
@@ -70,7 +71,8 @@ import myModalHTML from './components/my_modal.html'
 document.getElementById('plugin-modals-container').insertAdjacentHTML('beforeend', myModalHTML) ;
 ```
 
-2. Custom HTML Banners 
+2. **Custom HTML Banners**
+
   If you need to convey state or feedback to the user that cannot be expressed with the basic button highlighting from the core functions, you should use a banner. Your banner can have any inner content but the outermost containing div should have the class `banner` (and you should not overwrite styles for that class) eg. `<div id="my-alert" class="banner warning hidden">My custom alert message</div>`. It should be inserted into the `<div id="banners-container"></div>`, eg:
 ```
 import myAlertHTML from './components/my_alert.html'
@@ -78,10 +80,12 @@ import myAlertHTML from './components/my_alert.html'
 document.getElementById('plugin-modals-container').insertAdjacentHTML('beforeend', myAlertHTML) ;
 ```  
 
-3. Custom CSS
+3. **Custom CSS**
+
   To style custom HTML elements added by the module (not to overwrite core styles!)
 
-4. Javascript event listeners on controls
+4. **Javascript event listeners on controls**
+
   To add a data-* attribute to a control for your javascript to hook into, add your tag to the `data_attributes` option in the config. For example, here is the config for a display source input that the Zoom Room module hooks into:
 ```
 "zoom": {

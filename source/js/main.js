@@ -12,15 +12,12 @@ import { setButtonState, handleToggleButton } from './controls/toggle_button.js'
 import { setVideoMuteButtonState } from './controls/video_mute_button.js';
 import { setVolumeSliderState } from './controls/volume_slider.js';
 import { globals } from './globals.js';
-import { throwClientError } from './global_error_catching.js';
 import '../css/styles.css'
 
 const REFRESH_WAIT = 5000 ;
 let orchestrator, system, refresh;
 let updateStatusOngoing = false;
 let retries = 2;
-
-let systemState;
 
 // pool of 10 volume slider timeout IDs (10 is an arbitrary upper limit on sliders per system)
 let timer1, timer2, timer3, timer4, timer5, timer6, timer7, timer8, timer9, timer10;
@@ -374,7 +371,6 @@ async function getStatus() {
   // re/draw the gui
   if (status) {
     globals.state = status;
-    systemState = status ; // DEV ONLY
     document.getElementById("message").classList.add("hidden");
 
     // header
@@ -420,7 +416,7 @@ async function getStatus() {
 }
 
 // Send user request to orchestrator 
-async function updateStatus(payload, callback) {
+async function updateStatus(payload, callback=null) {
   // Delay incoming update until current update has finished
   if (updateStatusOngoing) {
     setTimeout(updateStatus(payload, callback), 500);
@@ -538,6 +534,6 @@ export {
   updateStatus, 
   setupControlSet, 
   availableTimers,
-  orchestratorRequest,
-  systemState
+  orchestratorRequest
 };
+

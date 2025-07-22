@@ -2,7 +2,7 @@ name: Build Latest from Shared Workflow
 
 on:
   push:
-    branches: ["main", "feature/build-step"]
+    branches: ["main"]
 
 jobs:
   webpack_build:

@@ -30,6 +30,7 @@ If you don't set the HOME_ORCHESTRATOR variable, clients will have to specify an
 
 
 ## Contributing
+### Basic setup
 If you are forking or developing this project, you will need to install `webpack` as a dev dependency, and use it to compile the source files into ./public: 
 
 1. Run `npm install` to install webpack and other dependencies from package.json
@@ -47,3 +48,103 @@ services:
     ports:
       - 8080:80
 ```
+### Adding a module
+If you want to add a feature the first thing to do is consider whether it should be an addition to the **core functions** of frontend-web or if it should be contained in a new **optional module**. 
+
+**Core functions:**
+The core functionality of frontend-web includes:
+- Rendering the system interface from the config
+- Behavior of controls
+- Updating control states 
+- Polling the state of the system from the orchestrator (every 5 seconds)
+- Direct requests to the orchestrator (updateStatus function is exported for modules to use as request wrapper)
+
+**Optional modules:**
+If you need to add user feedback or inputs that aren't available in the Core functions, eg. a form to send a help request, or to join a web conference, a module is probably the right choice. Modules can add functions to the interface through:
+1. Custom HTML Modals
+  The content of your modals is not restricted but should follow style guidelines, and use standard controls/inputs when possible.
+  When injecting your custom modal HTML into the DOM, insert it into the `<div id="plugin-modals-container"></div>` element. Do NOT overwrite the innerHTML of that element as other modules will be inserting HTML there. Example javascript:
+```
+import myModalHTML from './components/my_modal.html'
+
+document.getElementById('plugin-modals-container').insertAdjacentHTML('beforeend', myModalHTML) ;
+```
+
+2. Custom HTML Banners 
+  If you need to convey state or feedback to the user that cannot be expressed with the basic button highlighting from the core functions, you should use a banner. Your banner can have any inner content but the outermost containing div should have the class `banner` (and you should not overwrite styles for that class) eg. `<div id="my-alert" class="banner warning hidden">My custom alert message</div>`. It should be inserted into the `<div id="banners-container"></div>`, eg:
+```
+import myAlertHTML from './components/my_alert.html'
+
+document.getElementById('plugin-modals-container').insertAdjacentHTML('beforeend', myAlertHTML) ;
+```  
+
+3. Custom CSS
+  To style custom HTML elements added by the module (not to overwrite core styles!)
+
+4. Javascript event listeners on controls
+  To add a data-* attribute to a control for your javascript to hook into, add your tag to the `data_attributes` option in the config. For example, here is the config for a display source input that the Zoom Room module hooks into:
+```
+"zoom": {
+  "name": "Zoom",
+  "icon": "zoom",
+  "data_attributes": [
+    "zoom-room-input"
+  ],
+  "value": { ... }
+}
+```
+
+Your javascript needs to wait for the main entrypoint script to render the controls and add your data-* attribute to the configured control(s). When the controls are ready for your script to hook into, the main js will set `globals.uiReady` to `true`. Here is an example of how to wait for `uiReady`:
+```
+import { globals } from '/source/js/globals.js';
+
+const MAX_TRIES = 5;
+let guiInitiationTries = 0;
+
+function addMyEventListeners() {
+  if ( !globals.uiReady ) {
+    if ( guiInitiationTries <= MAX_TRIES ) {
+      guiInitiationTries++;
+      return setTimeout( initiateZoomGUI, 500 )
+    }
+  }
+
+  // Ok to attach event listeners
+  document.querySelectorAll('[data-my-tag]').forEach(input => {
+    input.addEventListener('click', openCustomModal)
+  });
+}
+
+// Correct way to add a window.onload listener:
+window.addEventListener("load", addMyEventListeners);
+
+```
+**Important:** Don't assign window.onload directly. eg `window.onload = () => { ... }` <-- NO!!! We are using multiple entrypoints and each one needs to be able to add its own window load listener. So the correct way to do this is: `window.addEventListener('load', myCustomHandler)` <-- YES!
+
+**Important:** Don't set globals in any of your code. Treat globals as read only. 
+
+Module source directories should be added to `/source/optional_modules/<your_plugin>`. Within your module directory your code can be organized any way you want, but you can use the zoom_room module as a model.
+
+
+#### Adding to the webpack build
+To get your module code bundled and sent to the client you need to add it to the webpack build. Modify both `webpack.config.js` and `webpack.config.dev.js` to add a new entrypoint:
+```
+entry: { 
+    globals: './source/js/globals.js',
+    index: {
+      import: './source/js/main.js',
+      dependOn: 'globals', 
+    },
+    zoom: {
+      import: './source/optional_modules/zoom_room/index.js',
+      dependOn: 'globals',
+    },
+    my_module: {
+      import: './source/optional_modules/my_module/index.js',
+      dependOn: 'globals',
+    }
+  }
+```
+
+
+

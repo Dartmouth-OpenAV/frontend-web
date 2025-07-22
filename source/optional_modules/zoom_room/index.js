@@ -33,8 +33,6 @@ function joinZoomMeeting(meetingId, password, callback=null) {
 
   // Post join request to orchestrator
   const payload = JSON.stringify({ zoom_room : { join : { id: meetingId, password: password }}}) ;
-  console.log('payload for zoom join');
-  console.log(payload);
   updateStatus(payload, () => {
     getZoomData(); // start the loop again
 
@@ -68,51 +66,92 @@ function leaveZoomMeeting(callback=null) {
   })
 }
 
+function handleSuggestedJoinSubmit(e) {
+  // remove the submit listener
+  const modal = document.getElementById('scheduled-zoom-prompt') ;
+  const submitBtn = modal.querySelector('button[name=join-suggested-meeting]') ; // TO DO: refactor to use form/submit?
+  submitBtn.removeEventListener('click', handleSuggestedJoinSubmit);
+
+  // user feedback: style submit button
+  //submitBtn.classList.add(??)
+
+  // callback for updateStatus
+  function reset() {
+    // hide suggested join modal
+    modal.classList.add('hidden');
+
+    // style buttons active
+    //submitBtn.classList.remove(??)
+  }
+
+  joinZoomMeeting( zoomData.suggested_meeting?.meeting_id, zoomData.suggested_meeting?.meeting_password, reset) ;
+}
+
+function handleManualJoinSubmit(e) {
+  e.preventDefault();
+  const modal = document.getElementById('manual-zoom-prompt') ;
+  const form = e.target;
+  const submitBtn = form.querySelector('button[type=submit]')
+
+  // remove submit listener
+  form.removeEventListener('submit', handleManualJoinSubmit);
+
+  // user feedback: style submit button
+  //submitBtn.classList.add(??)
+
+  // get values from form
+  const meetingId = form.querySelector( "input[name=meeting_id]" ).value ;
+  const password = form.querySelector( "input[name=password]" ).value ;
+
+  // callback for updateStatus
+  function reset() {
+    // hide manual join modal
+    modal.classList.add('hidden');
+
+    // style buttons active
+    //submitBtn.classList.remove(??)
+  }
+
+  joinZoomMeeting( meetingId, password, reset );  
+}
+
+function handleLeaveSubmit(e) {
+  // remove submit listener
+  const modal = document.getElementById('leave-zoom-prompt') ;
+  const submitBtn = modal.querySelector('button[name=leave-meeting]') ; // TO DO: refactor to use form/submit?
+  submitBtn.removeEventListener('click', handleLeaveSubmit);
+
+  // user feedback: style submit button
+
+  function reset() {
+    // hide leave modal
+    modal.classList.add('hidden');
+
+    // style buttons active
+    //submitBtn.classList.remove(??)
+  }
+
+  leaveZoomMeeting(reset);
+}
+
+// Making this snippet reusable so that Manual Meeting join can share
+// with Suggested Meeting dismiss
+function openManualJoinForm() {
+  // clear old form input
+  const form = document.getElementById('join-meeting-by-id');
+  form.reset(); // belt and suspenders
+
+  // re-attach form submit listener
+  form.addEventListener('submit', handleManualJoinSubmit);
+
+  openModal(null, 'manual-zoom-prompt');
+}
+
+// Open one of three prompts based on Zoom state:
 function openZoomPrompt() {
   const meetingJoined = zoomData.meeting?.status === "in_meeting" ? true : false ;
 
-  function handleSuggestedJoinSubmit(e) {
-    // remove the submit listener
-    const modal = document.getElementById('scheduled-zoom-prompt') ;
-    const submitBtn = modal.querySelector('button[name=join-suggested-meeting]') ; // TO DO: refactor to use form/submit?
-    submitBtn.removeEventListener('click', handleSuggestedJoinSubmit);
-
-    // user feedback: style submit button
-    //submitBtn.classList.add(??)
-
-    // callback for updateStatus
-    function reset() {
-      // hide suggested join modal
-      modal.classList.add('hidden');
-
-      // style buttons active
-      //submitBtn.classList.remove(??)
-    }
-
-    joinZoomMeeting( zoomData.suggested_meeting?.meeting_id, zoomData.suggested_meeting?.meeting_password, reset) ;
-  }
-
-  function handleLeaveSubmit(e) {
-    // remove submit listener
-    const modal = document.getElementById('leave-zoom-prompt') ;
-    const submitBtn = modal.querySelector('button[name=leave-meeting]') ; // TO DO: refactor to use form/submit?
-    submitBtn.removeEventListener('click', handleLeaveSubmit);
-
-    // user feedback: style submit button
-
-    function reset() {
-      // hide leave modal
-      modal.classList.add('hidden');
-
-      // style buttons active
-      //submitBtn.classList.remove(??)
-    }
-
-    leaveZoomMeeting(reset);
-  }
-
-  // Open one of three prompts based on Zoom state:
-  //  // Suggested meeting join:
+  // Suggested meeting join:
   if ( !meetingJoined && zoomData.suggested_meeting ) {
     // update modal text
     const modal = document.getElementById('scheduled-zoom-prompt');
@@ -123,11 +162,11 @@ function openZoomPrompt() {
 
     openModal(null, 'scheduled-zoom-prompt');
   }
-  //  // Manual meeting join:
+  // Manual meeting join:
   else if ( !meetingJoined ) {
     openManualJoinForm(); // using a global function instead of inline so that Suggested Meeting dismiss can run this routine
   }
-  //  // Leave meeting prompt
+  // Leave meeting prompt
   else {
     // re-attach submit listeners etc ...
     const modal = document.getElementById('leave-zoom-prompt');
@@ -135,46 +174,6 @@ function openZoomPrompt() {
 
     openModal(null, 'leave-zoom-prompt');
   }
-}
-
-// Making this snippet reusable so that Manual Meeting join can share
-// with Suggested Meeting dismiss
-function openManualJoinForm() {
-  // clear old form input
-  const form = document.getElementById('join-meeting-by-id');
-  form.reset();
-
-  // re-attach form submit listener
-  function handleManualJoinSubmit(e) {
-    e.preventDefault();
-    const modal = document.getElementById('manual-zoom-prompt') ;
-    // const form = e.target;
-    const submitBtn = form.querySelector('button[type=submit]')
-
-    // remove submit listener
-    form.removeEventListener('submit', handleManualJoinSubmit);
-
-    // user feedback: style submit button
-    //submitBtn.classList.add(??)
-
-    // get values from form
-		const meetingId = form.querySelector( "input[name=meeting_id]" ).value ;
-		const password = form.querySelector( "input[name=password]" ).value ;
-
-    // callback for updateStatus
-    function reset() {
-      // hide manual join modal
-      modal.classList.add('hidden');
-
-      // style buttons active
-      //submitBtn.classList.remove(??)
-    }
-
-    joinZoomMeeting( meetingId, password, reset );  
-  }
-  form.addEventListener('submit', handleManualJoinSubmit);
-
-  openModal(null, 'manual-zoom-prompt');
 }
 
 function displayZoomStatus() {
@@ -229,10 +228,23 @@ function initiateZoomGUI() {
       input.addEventListener('click', openZoomPrompt)
     });
 
-    // Attach static listeners to inputs in custom Zoom modals, eg. Close/Back buttons
+    // Attach static listeners to inputs in custom Zoom modals, eg. Cancel/Back dismiss buttons
     attachSharedModalListeners();
-    // special handler for the Suggested Meeting prompt dismiss-modal button: Open the manual join prompt
-    document.querySelector('#scheduled-zoom-prompt button.dismiss-modal').addEventListener('click', openManualJoinForm);
+    // Special extra handlers for the dismiss-modal buttons:
+    document.querySelector('#scheduled-zoom-prompt button.dismiss-modal').addEventListener('click', (e) => {
+      // remove scheduled-zoom-prompt submit handler and open Manual Join prompt
+      document.querySelector('#scheduled-zoom-prompt button[name=join-suggested-meeting]').removeEventListener('click', handleSuggestedJoinSubmit);
+      openManualJoinForm();
+    });
+    document.querySelector('#manual-zoom-prompt button.dismiss-modal').addEventListener('click', (e) => {
+      // clear form and remove submit handler
+      document.getElementById('join-meeting-by-id').removeEventListener('submit', handleManualJoinSubmit);
+      document.getElementById('join-meeting-by-id').reset() ;
+    });
+    document.querySelector('#leave-zoom-prompt button.dismiss-modal').addEventListener('click', (e) => {
+      // remove manual-zoom-prompt submit handler
+      document.querySelector('#leave-zoom-prompt button[name=leave-meeting]').removeEventListener('click', handleLeaveSubmit);
+    });
 
     // Focus listener for "join meeting" form inputs
     document.querySelectorAll( "form#join_meeting_by_id input" ).forEach( function handler(input) {

@@ -267,7 +267,5 @@ function initiateZoomGUI() {
 
 
 /* page load listener */
-window.addEventListener("load", async (event) => {
-  initiateZoomGUI() ;
-});
+window.addEventListener("load", initiateZoomGUI);
 

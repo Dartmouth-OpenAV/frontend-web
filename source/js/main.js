@@ -381,6 +381,20 @@ async function getStatus() {
     document.getElementById( "maintenance" ).querySelector( "pre" ).innerHTML = JSON.stringify(status, null, 4) ;
 		document.getElementById( "maintenance" ).querySelector( ".timestamp" ).innerHTML = new Date() ;
 
+    // maintenance mode banner
+    if ( "maintenance_mode" in status && status.maintenance_mode === true ) {
+      document.getElementById( 'maintenance-mode-warning' ).classList.remove( 'hidden' );
+    } else {
+      document.getElementById( 'maintenance-mode-warning' ).classList.add( 'hidden' );
+    }
+
+    // recording light
+    if ( "recording" in status && status.recording?.status === true ) {
+      document.getElementById( 'recording-indicator' ).classList.remove( 'hidden' );
+    } else {
+      document.getElementById( 'recording-indicator' ).classList.add( 'hidden' );
+    }
+
     // check to see if configured controls need to be rendered
     let redraw = document.getElementById("main-controls").innerHTML ? false : true;
     if ( redraw ) {
@@ -518,6 +532,11 @@ window.addEventListener("load", async (event) => {
     document.getElementById('maintenance').classList.add('hidden');
     document.getElementById('tech-errors').innerHTML = '';
   });
+  
+  // maintenance mode banner
+  document.querySelectorAll( "#maintenance-mode-warning .icon-container" ).forEach(elem => {
+		elem.innerHTML = document.getElementById("construction-icon-template").innerHTML ;
+	})
 });
 
 // export { 

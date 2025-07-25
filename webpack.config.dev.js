@@ -5,16 +5,9 @@ const WebpackShellPluginNext = require('webpack-shell-plugin-next');
 
 module.exports = {
   mode: 'development',
-  // context: path.resolve(__dirname, 'source'),
   entry: { 
-    globals: './source/js/globals.js',
     index: {
-      import: './source/js/main.js',
-      dependOn: 'globals', 
-    },
-    zoom: {
-      import: './source/optional_modules/zoom_room/index.js',
-      dependOn: 'globals',
+      import: ['./source/js/globals.js','./source/js/main.js','./source/optional_modules/zoom_room/index.js']
     }
   },
   output: {
@@ -23,10 +16,7 @@ module.exports = {
     clean: true
   },
   optimization: {
-    splitChunks: {
-      chunks: 'all',
-      name: 'common',
-    },
+    runtimeChunk: 'single'
   },
   plugins: [
     new HtmlWebpackPlugin({

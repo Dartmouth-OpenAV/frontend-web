@@ -1,7 +1,10 @@
 // Import all required modules
-import { openModal, closeModal, setupModals } from './modals.js';
+import { globals } from './globals.js';
+import { orchestratorRequest } from './orchestrator_request.js' ;
+import { openModal, setupModals } from './modals.js';
 import { handleMaintenanceClick, resetMaintenanceModalTimeout } from './maintenance_modal.js';
 import { followPath } from './utilities.js';
+
 import { handlePanTiltZoom, handlePanTiltZoomStop } from './controls/camera_pan_tilt_zoom.js';
 import { handleDefaultButton } from './controls/default_button.js';
 import { setDisplaySourceOptionState } from './controls/display_source_radio.js';
@@ -11,19 +14,13 @@ import { handleRadioSelect } from './controls/radio.js';
 import { setButtonState, handleToggleButton } from './controls/toggle_button.js';
 import { setVideoMuteButtonState } from './controls/video_mute_button.js';
 import { setVolumeSliderState } from './controls/volume_slider.js';
-import { globals } from './globals.js';
+
 import '../css/styles.css'
 
 const REFRESH_WAIT = 5000 ;
-let orchestrator, system, refresh;
-let updateStatusOngoing = false;
-let retries = 2;
+let refresh;
 
-// pool of 10 volume slider timeout IDs (10 is an arbitrary upper limit on sliders per system)
-let timer1, timer2, timer3, timer4, timer5, timer6, timer7, timer8, timer9, timer10;
-const availableTimers = [timer1, timer2, timer3, timer4, timer5, timer6, timer7, timer8, timer9, timer10];
 let nextAvailableTimer = 0;
-
 
 function clearDisplay() {
   // clear main controls
@@ -36,6 +33,13 @@ function clearDisplay() {
   document.getElementById("room-name").innerHTML = "";
   document.getElementById("room-header").classList.add("hidden");
 }
+
+function alert404() {
+  clearDisplay();
+  document.getElementById("message").innerHTML = "<p>System configuration not found.</p> <p>Make sure 'system' and 'orchestrator' URL parameters are set.</p>";
+  document.getElementById("message").classList.remove("hidden");
+}
+
 
 /***
  * 
@@ -303,212 +307,159 @@ function updateAllControls(statusData) {
   });
 }
 
-function failover() {
-  console.log("failover placeholder") ;
-  return false
+function pauseRefresh() {
+  window.clearTimeout(refresh); 
 }
 
-// Wrapper function for getStatus and updateStatus; handles orchestrator errors
-async function orchestratorRequest(url, options) {
+// main state healing loop
+async function refreshState() {
   // Pause refresh loop
-  window.clearTimeout(refresh); 
+  pauseRefresh();
 
-  return fetch(url, { ...options, signal: AbortSignal.timeout(REFRESH_WAIT) })
-    .then(response => {
-      // On success, restart the refresh loop and return JSON
-      if ( response.status === 200 ) {
-        retries = 2;
-        refresh = window.setTimeout(getStatus, REFRESH_WAIT);
-        return response.json()
+  if (!globals.orchestrator || !globals.system) {
+    alert404();
+    return null
+  } 
+
+  // Request state from orchestrator
+  const state = await orchestratorRequest(`${globals.orchestrator}/api/systems/${globals.system}/state`)
+    .then(async response => {
+      // Do not continue the refresh loop on non-OK responses
+      // Add user feedback in case of 404
+      if ( response.status === 404 ) {
+        clearDisplay();
+        document.getElementById("message").innerHTML = "<p>Could not find system</p>";
+        document.getElementById("message").classList.remove("hidden");
+        return false
       }
-
-      // Check for 204 and 404 (expected/user error states):
-      if (response.status === 204 || response.status === 404) {
+      // catch all other non-200 responses (shouldn't get here)
+      if ( !response.ok ) {
+        return false
+      }
+      // Handle special 204 response: Continue refresh loop but don't render UI
+      if (response.status === 204) {
         clearDisplay();
         document.getElementById("message").innerHTML = response.status === 204 ? "<p>System initializing ...</p>" : "<p>Could not find system</p>";
         document.getElementById("message").classList.remove("hidden");
-
-        // restart refresh loop
-        retries = 2;
-        refresh = window.setTimeout(getStatus, REFRESH_WAIT);
-        return false
+        return "WAIT"
       }
 
-      // Happens if the payload for an error is invalid.
-      if (response.status === 400) {
-        response.json().then(data => {
-          console.log("Bad request: ", data);
-        });
-        refresh = window.setTimeout(getStatus, REFRESH_WAIT);
-        return false
+      // 200 response, should have json body
+      return await response.json()
+    });
+
+  if ( state ) {
+    // Set global state and render UI
+    if ( state !== "WAIT" ) { // exclude 204s
+      globals.state = state ;
+
+      // If controls have not been rendered yet, render control sets
+      // TO DO: check for when controls are added/removed instead of checking for any controls
+      if ( !document.getElementById("main-controls").innerHTML ) {
+        drawUI(state);
       }
 
-      // Failover on 500+ response; intentionally hiding error from user
-      // TO DO: log error to orchestrator
-      if ( retries > 0 ) {
-        retries-- ;
-        return orchestratorRequest(url, options)
-      }
-      return failover()
-    })
-    // On timeouts, failover; intentionally hiding error from user
-    .catch(err => {
-      console.log(err);
-      // TO DO: log error to orchestrator
+      // Attach listeners and set state on controls
+      updateAllControls(state); 
+    }
 
-      if ( retries > 0 ) {
-        retries--;
-        return orchestratorRequest(url, options)
-      }
-      return failover()
-    })
+    // On OK statuses, continue refresh loop
+    refresh = window.setTimeout(refreshState, REFRESH_WAIT);
+  }
 }
 
-// Fetch system state from orchestrator
-async function getStatus() {
-  const status = await orchestratorRequest( `${orchestrator}/api/systems/${system}/state` ) ;
+function drawUI( config ) {
+  // clear out messages etc.
+  document.getElementById("message").innerHTML = "";
+  document.getElementById("message").classList.add("hidden");
+  clearDisplay();
 
-  // re/draw the gui
-  if (status) {
-    globals.state = status;
-    document.getElementById("message").classList.add("hidden");
+  // header
+  document.getElementById("room-name").innerHTML = config.system_name;
+  document.getElementById("room-header").classList.remove("hidden");
 
-    // header
-    document.getElementById("room-name").innerHTML = status.system_name;
-    document.getElementById("room-header").classList.remove("hidden");
+  // main controls
+  if ( config.control_sets ) {
+    for (const controlSet in config.control_sets) {
+      let path = `{"control_sets":{"${controlSet}":{"controls":{"<id>":{"value":<value>}}}}}`;
 
-    // maintenance modal data
-    document.getElementById( "maintenance" ).querySelector( "pre" ).innerHTML = JSON.stringify(status, null, 4) ;
-		document.getElementById( "maintenance" ).querySelector( ".timestamp" ).innerHTML = new Date() ;
-
-    // check to see if configured controls need to be rendered
-    let redraw = document.getElementById("main-controls").innerHTML ? false : true;
-    if ( redraw ) {
-      // main controls
-      if ( status.control_sets ) {
-        for (const controlSet in status.control_sets) {
-          let path = `{"control_sets":{"${controlSet}":{"controls":{"<id>":{"value":<value>}}}}}`;
-
-          // check for options
-          let options = { 'half_width': false, 'justify_content': false }; // defaults
-          if (status.control_sets[controlSet].display_options) {
-            for (let opt in status.control_sets[controlSet].display_options) {
-              options[opt] = status.control_sets[controlSet].display_options[opt];
-            }
-          }
-
-          setupControlSet(controlSet, status.control_sets[controlSet], path, 'main-controls');
+      // check for options
+      let options = { 'half_width': false, 'justify_content': false }; // defaults
+      if (config.control_sets[controlSet].display_options) {
+        for (let opt in config.control_sets[controlSet].display_options) {
+          options[opt] = config.control_sets[controlSet].display_options[opt];
         }
       }
 
-      // render custom modals for advanced controls 
-      if ( status.modals )  {
-        setupModals(status.modals, false);
-      } 
-
-      // update uiReady flag so that modules can attach custom listeners to controls
-      globals.uiReady = true ;
+      setupControlSet(controlSet, config.control_sets[controlSet], path, 'main-controls');
     }
-
-    // update controls to the current state
-    updateAllControls(status);
   }
+
+  // render custom modals for advanced controls 
+  if ( config.modals )  {
+    setupModals(config.modals, false);
+  }
+
+  // update uiReady flag so that modules can attach custom listeners to controls
+  // TO DO: use an even emitter instead
+  globals.uiReady = true ;
 }
 
-// Send user request to orchestrator 
-async function updateStatus(payload, callback=null) {
-  // Delay incoming update until current update has finished
-  if (updateStatusOngoing) {
-    setTimeout(updateStatus(payload, callback), 500);
-    return null
-  } else {
-    updateStatusOngoing = true;
-  }
-
-  // Send the update to the orchestrator
-  const options = {
-    method: 'PUT',
-    body: payload
-  }
-  const response = await orchestratorRequest(`${orchestrator}/api/systems/${system}/state`, options ) ;
-
-  // Call the callback function if one is provided
-  if ( response && callback ) {
-    callback(response);
-  }
-
-  // Allow other updates to go through
-  updateStatusOngoing = false;
-
-  return response
-}
 
 
 // clear cache and reload
 function clearSystemCache() {
+  pauseRefresh();
   document.getElementById('tech-errors').innerHTML = '';
 
+  const url = `${globals.orchestrator}/api/systems/${globals.system}/cache` ;
   const options = {
     method: 'delete'
   };
-  fetch(`${orchestrator}/api/systems/${system}/cache`, options)
+  orchestratorRequest(url, options)
     .then(response => {
-      if ( response.ok ) {
-        getStatus();
-      } else {
+      if (!response.ok ) {
         const alert = document.getElementById('alert-template').innerHTML.replace(/{{message}}/, `ERROR: ${response.status} response from ${orchestrator}/api/systems/${system}/cache`) ;
-        document.getElementById('tech-errors').insertAdjacentHTML('beforeend', alert) ;      }
+        document.getElementById('tech-errors').insertAdjacentHTML('beforeend', alert) ;  
+      }
+      refreshState();
     })
 }
 
 
 /* page load listener */
 window.addEventListener("load", async (event) => {
-  // set the 'orchestrator' and 'system' variables
-  // check if the system and orchestrator are passed in the URL
-  const queryParams = new URLSearchParams(window.location.search);
-  if (queryParams.has('system')) {
-    system = queryParams.get('system');
-  }
-  if (queryParams.has('orchestrator')) {
-    orchestrator = queryParams.get('orchestrator');
-  }
-
-  // If orchestrator is not defined in URL param, fetch from /config
-  if (!orchestrator) {
-    orchestrator = await fetch("/config")
+  // Check for home orchestrator from server config
+  await fetch("/config")
 	    .then(response => response.json())
-      .then(json => json.orchestrator)
-      .catch(err => {
-        console.error("Could not get 'orchestrator' from server", err);
-        return null
+      .then(json => {
+        globals.homeOrchestrator = json.orchestrator ;
+        globals.orchestrator = json.orchestrator ;
+        return json.orchestrator
       })
+      .catch(err => {
+        console.log("Could not get 'orchestrator' from server", err);
+        return null
+      });
+
+  // If orchestrator param set in URL, use this as current value (overwrite homeOrchestrator)
+  const queryParams = new URLSearchParams(window.location.search);
+  if (queryParams.has('orchestrator')) {
+    globals.orchestrator = queryParams.get('orchestrator') ;
   }
 
-  // If either orchestrator or system is not set, show error message
-  if (!orchestrator || !system) {
-    document.getElementById("message").innerHTML = "<p>System configuration not found.</p> <p>Make sure 'system' and 'orchestrator' URL parameters are set.</p>";
-    document.getElementById("message").classList.remove("hidden");
+  // Set global system from query param
+  if (queryParams.has('system')) {
+    globals.system = queryParams.get('system');
+  }
+  
+  // If either orchestrator or system is not set, show error message and stop processing
+  if (!globals.orchestrator || !globals.system) {
+    return alert404()
   }
 
-  // start getStatus loop
-  if (orchestrator && system) {
-    globals.orchestrator = orchestrator;
-    globals.system = system;
-    getStatus();
-  }
-
-  // preventDefault on all form submit actions 
-  document.querySelectorAll("form").forEach(function (form) {
-    form.addEventListener("submit", function (e) {
-      e.preventDefault();
-    });
-  });
-
-  // modal dismiss listeners
-  document.querySelectorAll(".modal:not(.timeout-exempt) .dismiss").forEach(function (dismiss) {
-    dismiss.addEventListener("click", closeModal);
-  });
+  // start refreshState loop
+  refreshState();
 
   // maintenance modal
   document.getElementById('room-name').addEventListener('click', handleMaintenanceClick);
@@ -520,20 +471,18 @@ window.addEventListener("load", async (event) => {
   });
 });
 
-// export { 
-//   orchestrator,
-//   system,
-//   updateStatus, 
-//   setupControlSet,
-//   refresh, 
-//   availableTimers,
-//   orchestratorRequest
-// };
-export { 
-  refresh,
-  updateStatus, 
-  setupControlSet, 
-  availableTimers,
-  orchestratorRequest
+
+/* updateStatus listeners */
+window.addEventListener('update_started', pauseRefresh);
+window.addEventListener('update_complete', (e) => {
+  if ( e.detail ) {
+    updateAllControls(e.detail);
+  }
+  refresh = window.setTimeout(refreshState, REFRESH_WAIT);
+});
+
+
+export {  
+  setupControlSet
 };
 

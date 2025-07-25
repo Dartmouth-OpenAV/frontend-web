@@ -5,7 +5,7 @@
  * 
  */
 
-import { updateStatus} from '../main.js';
+import { updateStatus} from '../orchestrator_request.js';
 import { setButtonState } from './toggle_button.js';
 import { followPath, appendUIInteractionJSON } from '../utilities.js';
 

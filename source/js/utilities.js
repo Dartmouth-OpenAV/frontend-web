@@ -5,7 +5,9 @@
  *    
  *                                                    
  */
-import { updateStatus } from './main.js';
+// import { updateStatus } from './main.js';
+import { updateStatus } from './orchestrator_request.js';
+
 let countdownTimeoutId;
 
 function mergeJSON(obj1, obj2) {

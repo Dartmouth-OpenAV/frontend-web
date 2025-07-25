@@ -1,6 +1,6 @@
 /* Global variables */
 import { globals } from '../../js/globals.js';
-import { updateStatus } from '../../js/main.js';
+// import { updateStatus } from '../../js/main.js';
 import { attachSharedModalListeners, openModal } from '../../js/modals.js';
 import banners from './components/zoom_banners.html'
 import joinManualModal from './components/join_manual_modal.html'
@@ -9,6 +9,9 @@ import leaveModal from './components/leave_modal.html'
 import abandonedMeetingModal from './components/abandoned_meeting_modal.html'
 import shareScreenModal from './components/share_screen_modal.html'
 import './zoom.css'
+
+import { updateStatus } from '../../js/orchestrator_request.js';
+
 
 /* Zoom variables */
 let refresh, zoomLeaveTimeoutId;
@@ -90,8 +93,7 @@ function handleSuggestedJoinSubmit(e) {
 function handleManualJoinSubmit(e) {
   e.preventDefault();
   const modal = document.getElementById('manual-zoom-prompt') ;
-  const form = e.target;
-  const submitBtn = form.querySelector('button[type=submit]')
+  const form = document.getElementById('join-meeting-by-id');
 
   // remove submit listener
   form.removeEventListener('submit', handleManualJoinSubmit);

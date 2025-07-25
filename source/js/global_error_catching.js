@@ -6,7 +6,7 @@
  *                                                    
  */
 import { globals } from './globals.js';
-import { orchestratorRequest } from './main.js';
+import { orchestratorRequest } from './orchestrator_request.js';
 
 // Global JS runtime error catching
 window.onerror = function(message, source, lineno, colno) {

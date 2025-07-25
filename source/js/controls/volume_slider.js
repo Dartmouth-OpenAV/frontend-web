@@ -4,8 +4,13 @@
  * 
  */
 
-import { refresh, availableTimers, updateStatus } from '../main.js';
+// import { refresh, availableTimers, updateStatus } from '../main.js';
 import { appendUIInteractionJSON } from '../utilities.js';
+import { updateStatus} from '../orchestrator_request.js';
+
+// pool of 10 volume slider timeout IDs (10 is an arbitrary upper limit on sliders per system)
+let timer1, timer2, timer3, timer4, timer5, timer6, timer7, timer8, timer9, timer10;
+const availableTimers = [timer1, timer2, timer3, timer4, timer5, timer6, timer7, timer8, timer9, timer10];
 
 function setVolumeSliderState(slider, level) {
   const color = slider.getAttribute('data-muted') === "true" ? 'var(--slider-muted)' : 'var(--theme-color)';
@@ -22,11 +27,11 @@ function setVolumeSliderState(slider, level) {
 var handleVolumeOngoing = false ;
 function handleVolumeSlider(e, isRecursion=false) {
 	const slider = e.target ;
-
-	//clear timeouts
-	window.clearTimeout(refresh);
-	const timerId = parseInt( slider.getAttribute( 'data-timer' ) );
-	window.clearTimeout( availableTimers[timerId] );
+  const timerId = parseInt( slider.getAttribute( 'data-timer' ) );
+	window.clearTimeout( availableTimers[timerId] ); // restart check for touch end
+	
+  // pause the refresh loop while taking user input
+  window.dispatchEvent( new Event('update_started') ); 
 
 	if( !isRecursion ) {
 		// visual feedback

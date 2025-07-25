@@ -4,7 +4,7 @@
  * 
  */
 
-import { updateStatus} from '../main.js';
+import { updateStatus} from '../orchestrator_request.js';
 import { setDisplaySourceOptionState } from './display_source_radio.js';
 import { followPath, appendUIInteractionJSON } from '../utilities.js';
 

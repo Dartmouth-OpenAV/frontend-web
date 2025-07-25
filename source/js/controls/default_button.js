@@ -4,7 +4,7 @@
  * 
  */
 
-import { updateStatus} from '../main.js';
+import { updateStatus} from '../orchestrator_request.js';
 import { appendUIInteractionJSON } from '../utilities.js';
 
 function handleDefaultButton(e) {

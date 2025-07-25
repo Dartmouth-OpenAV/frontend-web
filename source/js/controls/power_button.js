@@ -4,7 +4,7 @@
  * 
  */
 
-import { updateStatus } from '../main.js';
+import { updateStatus } from '../orchestrator_request.js';
 import { setButtonState } from './toggle_button.js';
 import { handleVideoMute, setVideoMuteButtonState } from './video_mute_button.js';
 import { setDisplaySourceOptionState, handleDisplaySourceSelect } from './display_source_radio.js';

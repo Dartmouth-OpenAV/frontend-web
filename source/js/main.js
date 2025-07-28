@@ -362,6 +362,20 @@ async function refreshState() {
 
       // Attach listeners and set state on controls
       updateAllControls(state); 
+
+      // Check for maintenance mode
+      if ( state.maintenance_mode ) {
+        document.getElementById( 'maintenance-mode-warning' ).classList.remove( 'hidden' );
+      } else {
+        document.getElementById( 'maintenance-mode-warning' ).classList.add( 'hidden' );
+      }
+
+      // Check for recording mode
+      if ( state.recording?.status ) {
+        document.getElementById( 'recording-indicator' ).classList.remove( 'hidden' );
+      } else {
+        document.getElementById( 'recording-indicator' ).classList.add( 'hidden' );
+      }
     }
 
     // On OK statuses, continue refresh loop
@@ -462,7 +476,7 @@ window.addEventListener("load", async (event) => {
   // start refreshState loop
   refreshState();
 
-  // maintenance modal
+  // listeners for maintenance modal
   document.getElementById('room-name').addEventListener('click', handleMaintenanceClick);
   document.getElementById('maintenance').addEventListener('click', resetMaintenanceModalTimeout);
   document.getElementById('config-reload-btn').addEventListener('click', clearSystemCache);
@@ -470,6 +484,11 @@ window.addEventListener("load", async (event) => {
     document.getElementById('maintenance').classList.add('hidden');
     document.getElementById('tech-errors').innerHTML = '';
   });
+  
+  // icons for maintenance mode banner
+  document.querySelectorAll( "#maintenance-mode-warning .icon-container" ).forEach(elem => {
+		elem.innerHTML = document.getElementById("construction-icon-template").innerHTML ;
+	})
 });
 
 

@@ -16,11 +16,24 @@
 		<h1 id="room-name"></h1>
 	</div>
 
+  <!-- Recording light -->
+	<div id="recording-indicator" class="hidden">
+		<span>REC</span>
+		<div id="recording-light"></div>
+	</div>
+	
   <!-- Main controls -->
 	<div id="main-controls" class="container primary-control-group"></div>
 
   <!-- alerts/banners container -->
-  <div id="banners-container"></div>
+  <div id="banners-container">
+	<!-- Maintenance mode warning -->
+	<div id="maintenance-mode-warning" class="banner warning hidden">
+		<div class="icon-container">{{construction-icon}}</div>
+		<p><span class="feedback-message">System under maintenance &nbsp;&nbsp;</span></p>
+		<div class="icon-container">{{construction-icon}}</div>
+	</div>
+  </div>
 
 	<!-- error message container -->
 	<div id="message" class="hidden"></div>

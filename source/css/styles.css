@@ -733,6 +733,7 @@ h1#room-name {
 }
 #recording-indicator {
   position: fixed;
+  z-index: 110;
   top: 1.4rem;
   left: 2rem;
   display: flex;

@@ -352,6 +352,7 @@ async function refreshState() {
     // Set global state and render UI
     if ( state !== "WAIT" ) { // exclude 204s
       globals.state = state ;
+      window.dispatchEvent( new CustomEvent('new_state', { detail: state }) );
 
       // If controls have not been rendered yet, render control sets
       // TO DO: check for when controls are added/removed instead of checking for any controls

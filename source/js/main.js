@@ -401,9 +401,9 @@ function drawUI( config ) {
     setupModals(config.modals, false);
   }
 
-  // update uiReady flag so that modules can attach custom listeners to controls
-  // TO DO: use an even emitter instead
-  globals.uiReady = true ;
+  // Tell modules it's safe to attach custom listeners to controls
+  window.dispatchEvent( new Event('ui_ready') );
+  globals.uiReady = true ; // keeping this construct available as well, for modules that might load asynchronously
 }
 
 

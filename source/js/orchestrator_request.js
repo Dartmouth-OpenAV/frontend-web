@@ -4,9 +4,6 @@ const TIMEOUT_WAIT = 5000 ;
 const MAX_RETRIES = 2;
 let retries = MAX_RETRIES;
 
-let updateStatusOngoing = false;
-let updateStack = [];
-
 
 function failover() {
   console.log("failover placeholder") ;
@@ -26,7 +23,7 @@ function failback() {
 }
 
 
-// wrapper function to handle retry and failover
+// Wrapper function to handle retry and failover
 // On success, return full response; on failure, return failover (which returns False for now)
 async function orchestratorRequest(url, options) {
   function retry() {
@@ -53,51 +50,78 @@ async function orchestratorRequest(url, options) {
 }
 
 
-// Update systems/{system}/state
+// Async function queuing class borrowed from https://www.ccdatalab.org/blog/queueing-javascript-promises
+const Queue = (onResolve, onReject) => {
+  const updateStack = []
+
+  const dequeue = () => {
+    // no work to do
+    if (!updateStack[0]) return
+
+    // work to do!
+    updateStack[0]()
+      .then(onResolve)
+      .catch(onReject)
+      .then(() => updateStack.shift())
+      .then(dequeue)
+  }
+
+  const enqueue = (func) => {
+	  updateStack.push(func)
+	  if (updateStack.length === 1) dequeue()
+  }
+
+  return enqueue
+}
+
+
+// Wrapper function for PUTs to systems/{system}/state, to handle queueing and 
+// pausing/resuming the main refreshStatus loop
 function updateStatus(payload, callback=null) {
   // make sure global orchestrator and system variables are set
   if ( !globals.orchestrator || !globals.system ) {
     return null // TO DO: improve handling for this scenario
   }
-
-  // Check for an update request that hasn't completed yet
-  if ( updateStatusOngoing ) {
-    console.log('placeholder for updateStatus queuing ...') ;
-    return false
-  }
-
   // OK to proceed
-  updateStatusOngoing = true ;
+
+  // Tell main refreshStatus loop to pause while system state updates
   window.dispatchEvent( new Event('update_started') );
 
+  // Create an instance of Queue.enqueue with success and error handlers for updateStatus;
+  // (Note: declaring this in this scope so that callback is acceesible)
+  const enqueue = Queue(
+    async (response) => {
+      if ( response.ok ) {
+        const json = await response.json() ;
+
+        // Allow refreshStatus to run with response body and resume looping
+        window.dispatchEvent( new CustomEvent('update_complete', { detail: json }) );
+
+        // Check for additional custom callback from caller
+        if ( callback ) {
+          return callback(json)
+        }
+        return json
+      }
+      
+      throw new Error(`${response.status} response from updateStatus`) 
+    },
+    (err) => {
+      console.error(err);
+
+      // Allow refreshStatus loop to resume
+      window.dispatchEvent( new Event('update_complete') );
+    }
+  );
+
+  // Add this updateStatus request to the queue
   const options = {
     method: 'PUT',
     body: payload
   }
   const url = `${globals.orchestrator}/api/systems/${globals.system}/state` ;
-  return orchestratorRequest(url, options)
-    .then(response => {
-      updateStatusOngoing = false ;
 
-      if ( response.ok ) {
-        return response.json()
-      }
-
-      throw new Error(`${response.status} response from updateStatus`)      
-    }) 
-    .then(json => {
-      // dispatch completion event and pass response for listener in main.js
-      window.dispatchEvent( new CustomEvent('update_complete', { detail: json }) );
-
-      if ( callback ) {
-        return callback(json)
-      }
-      return json
-    })
-    .catch(err => {
-      console.log(err);
-      window.dispatchEvent( new Event('update_complete') );
-    })
+  enqueue(() => orchestratorRequest(url, options))
 }
 
 

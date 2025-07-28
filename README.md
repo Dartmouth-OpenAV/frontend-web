@@ -102,31 +102,30 @@ document.getElementById('plugin-modals-container').insertAdjacentHTML('beforeend
 }
 ```
 
-Your javascript needs to wait for the main entrypoint script to render the controls and add your data-* attribute to the configured control(s). When the controls are ready for your script to hook into, the main js will set `globals.uiReady` to `true`. Here is an example of how to wait for `uiReady`:
+Your javascript needs to wait for the main entrypoint script to render the controls and add your data-* attribute to the configured control(s). When the controls are ready for your script to hook into, the main js will emit a `ui_ready` event. It will also set `globals.uiReady` to `true` in case your module code loads asynchronously and runs after the ui_ready event fires. Here is an example of how to listen for `ui_ready`:
 ```
-import { globals } from '/source/js/globals.js';
-
-const MAX_TRIES = 5;
-let guiInitiationTries = 0;
-
 function addMyEventListeners() {
-  if ( !globals.uiReady ) {
-    if ( guiInitiationTries <= MAX_TRIES ) {
-      guiInitiationTries++;
-      return setTimeout( addMyEventListeners, 500 )
-    }
-  }
-
-  // Ok to attach event listeners
+  // Ok to attach event listeners to controls rendered by main.js
   document.querySelectorAll('[data-my-tag]').forEach(input => {
     input.addEventListener('click', openCustomModal)
   });
 }
 
-// Correct way to add a window.onload listener:
-window.addEventListener("load", addMyEventListeners);
+window.addEventListener("ui_ready", addMyEventListeners);
 
 ```
+If your module needs to react to state updates from the main refershState loop, your code can listen for the custom `new_state` event emitted by refreshState, which caches the state data in the event detail:
+```
+function updateBanner(e) {
+  const state = e.detail ;
+  const message = state.my_endpoint.status ;
+  // ...
+}
+
+window.addEventListener("new_state", updateBanner) ;
+```
+
+
 **Important:** Don't assign window.onload directly. eg `window.onload = () => { ... }` <-- NO!!! We are using multiple entrypoints and each one needs to be able to add its own window load listener. So the correct way to do this is: `window.addEventListener('load', myCustomHandler)` <-- YES!
 
 **Important:** Don't set globals in any of your code. Treat globals as read only. 

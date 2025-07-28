@@ -133,23 +133,18 @@ window.addEventListener("load", addMyEventListeners);
 
 
 #### Adding to the webpack build
-To get your module code bundled and sent to the client you need to add it to the webpack build. Modify both `webpack.config.js` and `webpack.config.dev.js` to add a new entrypoint:
+To get your module code bundled and sent to the client you need to add it to the webpack build. Modify both `webpack.config.js` and `webpack.config.dev.js` to add a new import to the entrypoint:
 ```
 entry: { 
-    globals: './source/js/globals.js',
-    index: {
-      import: './source/js/main.js',
-      dependOn: 'globals', 
-    },
-    zoom: {
-      import: './source/optional_modules/zoom_room/index.js',
-      dependOn: 'globals',
-    },
-    my_module: {
-      import: './source/optional_modules/my_module/index.js',
-      dependOn: 'globals',
-    }
+  index: {
+    import: [
+      './source/js/globals.js',
+      './source/js/main.js',
+      './source/optional_modules/zoom_room/index.js',
+      './source/optional_modules/my_plugin/index.js' // <- Entrypoint file for your plugin
+    ]
   }
+},
 ```
 
 

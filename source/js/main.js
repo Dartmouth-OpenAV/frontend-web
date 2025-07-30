@@ -495,9 +495,9 @@ window.addEventListener("load", async (event) => {
 /* updateStatus listeners */
 window.addEventListener('update_started', pauseRefresh);
 window.addEventListener('update_complete', (e) => {
-  if ( e.detail ) {
-    updateAllControls(e.detail);
-  }
+  // if ( e.detail ) {
+  //   updateAllControls(e.detail);
+  // } <-- Although tempting, makes volume slider jumpy
   refresh = window.setTimeout(refreshState, REFRESH_WAIT);
 });
 

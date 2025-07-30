@@ -4,11 +4,11 @@ const TIMEOUT_WAIT = 5000 ;
 const MAX_RETRIES = 2;
 let retries = MAX_RETRIES;
 
+const updateStack = []
 
 function failover() {
   console.log("failover placeholder") ;
 
-  // updateStatusOngoing = false;
   // emit update_complete 
 
   // set a new orchestrator ...
@@ -52,8 +52,6 @@ async function orchestratorRequest(url, options) {
 
 // Async function queuing class borrowed from https://www.ccdatalab.org/blog/queueing-javascript-promises
 const Queue = (onResolve, onReject) => {
-  const updateStack = []
-
   const dequeue = () => {
     // no work to do
     if (!updateStack[0]) return
@@ -88,19 +86,20 @@ function updateStatus(payload, callback=null) {
   window.dispatchEvent( new Event('update_started') );
 
   // Create an instance of Queue.enqueue with success and error handlers for updateStatus;
-  // (Note: declaring this in this scope so that callback is acceesible)
-  const enqueue = Queue(
+  // (Note: declaring this in this scope so that callback is accessible)
+  const enqueueUpdate = Queue(
     async (response) => {
       if ( response.ok ) {
         const json = await response.json() ;
 
+        // Check for additional custom callback from caller
+        if ( callback ) {
+          callback(json)
+        }
+
         // Allow refreshStatus to run with response body and resume looping
         window.dispatchEvent( new CustomEvent('update_complete', { detail: json }) );
 
-        // Check for additional custom callback from caller
-        if ( callback ) {
-          return callback(json)
-        }
         return json
       }
       
@@ -121,7 +120,7 @@ function updateStatus(payload, callback=null) {
   }
   const url = `${globals.orchestrator}/api/systems/${globals.system}/state` ;
 
-  enqueue(() => orchestratorRequest(url, options))
+  enqueueUpdate(() => orchestratorRequest(url, options))
 }
 
 

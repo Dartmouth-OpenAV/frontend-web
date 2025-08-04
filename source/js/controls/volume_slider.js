@@ -19,7 +19,7 @@ function setVolumeSliderState(slider, level) {
   const color = slider.getAttribute('data-muted') === "true" ? 'var(--slider-muted)' : 'var(--theme-color)';
   level = level && parseInt(level) ? level : 0 ; // parse error values as 0
   slider.value = level ; 
-  slider.setAttribute('style', `background:linear-gradient(to right, ${color}, ${color} ${level}%, var(--slider-muted) ${level}%, var(--slider-muted))`);
+  slider.setAttribute('style', `background:linear-gradient(to right, ${color}, ${color} ${level}%, var(--slider-background) ${level}%, var(--slider-background))`);
 
   // handlers
   if (slider.hasAttribute('data-allow-events')) {

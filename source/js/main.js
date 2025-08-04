@@ -29,9 +29,11 @@ function clearDisplay() {
   // clear custom modals
   document.getElementById('advanced-modals-container').innerHTML = "";
 
-  // clear headers
+  // clear headers and messages
   document.getElementById("room-name").innerHTML = "";
   document.getElementById("room-header").classList.add("hidden");
+  document.getElementById("message").innerHTML = "";
+  document.getElementById("message").classList.add("hidden");
 }
 
 function alert404() {
@@ -384,9 +386,6 @@ async function refreshState() {
 }
 
 function drawUI( config ) {
-  // clear out messages etc.
-  document.getElementById("message").innerHTML = "";
-  document.getElementById("message").classList.add("hidden");
   clearDisplay();
 
   // header

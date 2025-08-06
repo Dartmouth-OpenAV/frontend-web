@@ -460,7 +460,12 @@ window.addEventListener("load", async (event) => {
   // If orchestrator param set in URL, use this as current value (overwrite homeOrchestrator)
   const queryParams = new URLSearchParams(window.location.search);
   if (queryParams.has('orchestrator')) {
-    globals.orchestrator = queryParams.get('orchestrator') ;
+    let orchestrator = queryParams.get('orchestrator') ;
+    // Check if it doesn't start with http:// or https://
+    if (!/^https?:\/\//i.test(orchestrator)) {
+      orchestrator = 'http://' + orchestrator;
+    }
+    globals.orchestrator = orchestrator;
   }
 
   // Set global system from query param

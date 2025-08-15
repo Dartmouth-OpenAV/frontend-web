@@ -97,18 +97,21 @@ function updateStatus(payload, callback=null) {
           callback(json)
         }
 
-        // Allow refreshStatus to run with response body and resume looping
-        window.dispatchEvent( new CustomEvent('update_complete', { detail: json }) );
+        // Allow refreshState loop to resume
+        // window.dispatchEvent( new CustomEvent('update_complete', { detail: json }) ); // NOTE: deprecating this implementation because it caused unforseen UX malfunction (esp. volume)
+        window.dispatchEvent( new Event('update_complete') );
 
         return json
       }
       
-      throw new Error(`${response.status} response from updateStatus`) 
+      // On error from update, log and allow refreshState loop to resume
+      console.error(`${response.status} response from updateStatus`) ;
+      window.dispatchEvent( new Event('update_complete') );
     },
     (err) => {
       console.error(err);
 
-      // Allow refreshStatus loop to resume
+      // Allow refreshState loop to resume
       window.dispatchEvent( new Event('update_complete') );
     }
   );

@@ -81,7 +81,7 @@ document.getElementById('plugin-modals-container').insertAdjacentHTML('beforeend
 ```
 import myAlertHTML from './components/my_alert.html'
 
-document.getElementById('plugin-modals-container').insertAdjacentHTML('beforeend', myAlertHTML) ;
+document.getElementById('banners-container').insertAdjacentHTML('beforeend', myAlertHTML) ;
 ```  
 
 3. **Custom CSS**

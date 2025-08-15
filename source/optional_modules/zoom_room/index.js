@@ -17,15 +17,10 @@ import { updateStatus } from '../../js/orchestrator_request.js';
 let refresh, zoomLeaveTimeoutId;
 const abandonedZoomWaitTime = 7200000; // milliseconds (2hs)
 
-const REFRESH_WAIT = 5000 ;
-const MAX_TRIES = 5;
-let guiInitiationTries = 0;
+let guiInitiated = false;
 let zoomData;
 
 function joinZoomMeeting(meetingId, password, callback=null) {
-  // stop the getZoomData loop
-  clearTimeout(refresh);
-
   // User feedback: show banner
   // const banner = document.getElementById( 'zoom-room-notification' );
 	// banner.querySelector( '.feedback-message' ).innerHTML = 'Joining meeting ' ;
@@ -37,8 +32,6 @@ function joinZoomMeeting(meetingId, password, callback=null) {
   // Post join request to orchestrator
   const payload = JSON.stringify({ zoom_room : { join : { id: meetingId, password: password }}}) ;
   updateStatus(payload, () => {
-    getZoomData(); // start the loop again
-
     // call callback (reset)
     if (callback) { // Note: Using this pattern so that joinZoomMeeting can be exported for other modules to use in future
       callback();
@@ -47,9 +40,6 @@ function joinZoomMeeting(meetingId, password, callback=null) {
 }
 
 function leaveZoomMeeting(callback=null) {
-  // stop the getZoomData loop
-  clearTimeout(refresh);
-
   // User feedback: update banner
   // const banner = document.getElementById( 'zoom-room-notification' );
   // banner.querySelector( '.feedback-message' ).innerHTML = 'Leaving meeting ' ;
@@ -60,7 +50,6 @@ function leaveZoomMeeting(callback=null) {
   // Post leave request to orchestrator
   const payload = JSON.stringify({ zoom_room : { leave : true }}) ;
   updateStatus(payload, () => {
-    getZoomData(); // start the loop again
 
     // call callback (reset)
     if (callback) {
@@ -178,43 +167,18 @@ function openZoomPrompt() {
   }
 }
 
-function displayZoomStatus() {
-  console.log("time to update the Zoom banner ...")
+function displayZoomStatus(e) {
+  console.log("time to update the Zoom banner ...", e.detail) ;
+
+  // if ( e.detail.hasOwnProperty("zoom_room") ) {
 }
 
-function getZoomData() {
-  clearTimeout(refresh);
-
-  if ( globals.state?.zoom_room ) {
-    // Cache Zoom Room status for event listeners
-    zoomData = globals.state.zoom_room ;
-
-    // update the gui to reflect current state, check for abandoned meeting etc.
-    // ...
-    // displayZoomStatus();
-
-    refresh = window.setTimeout(getZoomData, REFRESH_WAIT);  
-  }
-  // lost global state, try again (shouldn't get here)
-  else {
-    refresh = window.setTimeout(getZoomData, REFRESH_WAIT);
-  }
-}
 
 function initiateZoomGUI() {
-  // Make sure the main window.onload process has run and gotten a system state;
-  // setupControlSets also needs to run (uiReady) before setting event listeners
-  if ( !globals.state || !globals.uiReady ) {
-    if ( guiInitiationTries <= MAX_TRIES ) {
-      guiInitiationTries++;
-      return setTimeout( initiateZoomGUI, 500 )
-    }
-    return false  // TO DO: call client error here? 
-  }
-  
-  // Only need to render Zoom UI components if this system has zoom_room configured
-  if ( globals.state.hasOwnProperty("zoom_room") ) {
-    zoomData = globals.state.zoom_room ;
+  // make sure elements only get initialized once, and listeners only get attached if zoom_room configured
+  if ( !guiInitiated && globals.state?.zoom_room ) { 
+    // Initiate zoomData object with globals.state (which should be assigned before ui_ready fires)
+    zoomData = globals.state?.zoom_room; 
 
     // Add Zoom Room banners to DOM 
     document.getElementById('banners-container').insertAdjacentHTML('beforeend', banners) ;
@@ -261,13 +225,15 @@ function initiateZoomGUI() {
     //   button.addEventListener( "click", toggleSip );
     // });  
 
+    guiInitiated = true ; 
 
-    // Start the status loop
-    getZoomData() ;
-  } 
+    // Start listening for state changes from main
+    window.addEventListener("new_state", displayZoomStatus);
+  }
 }
 
 
 /* page load listener */
-window.addEventListener("load", initiateZoomGUI);
+window.addEventListener("ui_ready", initiateZoomGUI); 
+
 

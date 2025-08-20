@@ -72,7 +72,7 @@ Modules can add functions to the interface through:
 ```
 import myModalHTML from './components/my_modal.html'
 
-document.getElementById('plugin-modals-container').insertAdjacentHTML('beforeend', myModalHTML) ;
+document.getElementById('plugin-modals-container').insertAdjacentHTML('beforeend', myModalHTML);
 ```
 
 2. **Custom HTML Banners**
@@ -81,7 +81,7 @@ document.getElementById('plugin-modals-container').insertAdjacentHTML('beforeend
 ```
 import myAlertHTML from './components/my_alert.html'
 
-document.getElementById('banners-container').insertAdjacentHTML('beforeend', myAlertHTML) ;
+document.getElementById('banners-container').insertAdjacentHTML('beforeend', myAlertHTML);
 ```  
 
 3. **Custom CSS**
@@ -117,12 +117,12 @@ window.addEventListener("ui_ready", addMyEventListeners);
 If your module needs to react to state updates from the main refershState loop, your code can listen for the custom `new_state` event emitted by refreshState, which caches the state data in the event detail:
 ```
 function updateBanner(e) {
-  const state = e.detail ;
-  const message = state.my_endpoint.status ;
+  const state = e.detail;
+  const message = state.my_endpoint.status;
   // ...
 }
 
-window.addEventListener("new_state", updateBanner) ;
+window.addEventListener("new_state", updateBanner);
 ```
 
 

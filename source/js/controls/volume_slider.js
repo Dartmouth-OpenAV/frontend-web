@@ -52,7 +52,8 @@ function setVolumeSliderState(slider, level) {
   }
 }
 
-function handleVolumeSlider(e, isRecursion = false) {
+// Removed unused "isRecursion = false" from declaration
+function handleVolumeSlider(e) {
   const slider = e.target;
   const timerId = parseInt(slider.getAttribute("data-timer"));
   window.clearTimeout(availableTimers[timerId]); // restart check for touch end

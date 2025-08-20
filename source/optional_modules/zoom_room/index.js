@@ -13,8 +13,8 @@ import "./zoom.css";
 import { updateStatus } from "../../js/orchestrator_request.js";
 
 /* Zoom variables */
-let refresh, zoomLeaveTimeoutId;
-const abandonedZoomWaitTime = 7200000; // milliseconds (2hs)
+//let refresh, zoomLeaveTimeoutId;
+//const abandonedZoomWaitTime = 7200000; // milliseconds (2hs)
 
 let guiInitiated = false;
 let zoomData;

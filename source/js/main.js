@@ -502,7 +502,8 @@ window.addEventListener('update_complete', (e) => {
   // if ( e.detail ) {
   //   updateAllControls(e.detail);
   // } <-- Although tempting, makes volume slider jumpy
-  refresh = window.setTimeout(refreshState, REFRESH_WAIT);
+  refresh = window.setTimeout(refreshState, REFRESH_WAIT); 
+  // refreshState(); <-- Again, although tempting, makes volume slider jumpy
 });
 
 

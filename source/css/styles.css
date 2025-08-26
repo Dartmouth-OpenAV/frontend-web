@@ -32,16 +32,16 @@
   --gray-dark: #232323;
   --gray-darker: #0a0a0a;
 
-  --theme-color: #b500ff ;
+  --theme-color: #b500ff;
   --active-element: var(--theme-color);
   --primary-button: var(--theme-color);
-  --inactive-element: var(--gray-light) ;
+  --inactive-element: var(--gray-light);
   --disabled-element: #595959;
   --warning-red: #e9243e;
-  /* --zoom-blue: rgb(22, 123, 222) ; */
+  /* --zoom-blue: rgb(22, 123, 222); */
 
-  --slider-background: #3a3a3a ;
-  --slider-muted: #595959 ;
+  --slider-background: #3a3a3a;
+  --slider-muted: #595959;
 
   /* Typography */
   --font-family-body: "Open Sans", sans-serif;
@@ -333,7 +333,7 @@ button.mute .icon {
   margin: 3rem 0.7rem;
   border-radius: 0.5rem;
   /* background: linear-gradient(to right, var(--theme-color), var(--theme-color) 50%, var(--slider-background) 50%, var(--slider-background)); */
-  background: var(--slider-background) ;
+  background: var(--slider-background);
   flex-grow: 4;
 }
 .slider::-webkit-slider-thumb, input[type=range]::-webkit-slider-thumb {
@@ -716,7 +716,7 @@ h1#room-name {
   width: 100%;
 }
 .alert.error {
-  background-color: var(--warning-red) ;
+  background-color: var(--warning-red);
   color: #fff;
 }
 
@@ -815,6 +815,9 @@ h1#room-name {
 .modal.modal-full .counter {
   font-weight: bold;
   font-size: 5.5rem;
+}
+.modal.modal-full.hidden {
+  display: none;
 }
 .modal.modal-relative {
   width: 100%;

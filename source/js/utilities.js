@@ -86,6 +86,20 @@ function useProgressBar(
   }, duration * 1000);
 }
 
+function bumpMainContentForBanners() {
+  const mainContent = document.getElementById("main-controls");
+  const currBanners = document.querySelectorAll(
+    "#banners-container > :not(.hidden)",
+  ).length;
+  mainContent.style = `--num-banners:${currBanners}`;
+
+  if (currBanners > 0) {
+    mainContent.classList.add("banners-active");
+  } else {
+    mainContent.classList.remove("banners-active");
+  }
+}
+
 function appendUIInteractionJSON(baseJSON) {
   let obj = JSON.parse(baseJSON);
   obj["environment_sensing"] = {
@@ -108,6 +122,7 @@ export {
   countdown,
   countdownTimeoutId,
   useProgressBar,
+  bumpMainContentForBanners,
   appendUIInteractionJSON,
   sendUIInteractionUpdate,
 };

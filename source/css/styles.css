@@ -97,13 +97,13 @@ h2 {
   padding-top: calc(var(--room-header-height) + 2.5rem);
 }
 
-.primary-control-group:first-of-type { /* Banner accomodations */
+/* banner accomodations */
+#main-controls, .primary-control-group:first-of-type { 
   padding-top: calc(var(--room-header-height) + 2.5rem);
 }
-.primary-control-group:first-of-type.banners-active {
+#main-controls.banners-active, .primary-control-group:first-of-type {
   padding-top: calc(var(--num-banners) * var(--banner-height) + var(--room-header-height) + 2.5rem);
 }
-
 
 /* icons */
 .icon {
@@ -1134,7 +1134,7 @@ h1#room-name {
     --room-header-height: 5rem;
     --banner-height: 5.1rem;
   }
-  .primary-control-group:first-of-type.banners-active {
+  #main-controls.banners-active, .primary-control-group:first-of-type.banners-active {
     padding-top: calc(var(--num-banners) * var(--banner-height) + var(--room-header-height) + 1.5rem);
   }
   .secondary-control-group {

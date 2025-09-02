@@ -2,10 +2,6 @@
 import { globals } from "./globals.js";
 import { orchestratorRequest } from "./orchestrator_request.js";
 import { openModal, setupModals } from "./modals.js";
-import {
-  handleMaintenanceClick,
-  resetMaintenanceModalTimeout,
-} from "./maintenance_modal.js";
 import { followPath } from "./utilities.js";
 
 import {
@@ -541,31 +537,6 @@ function drawUI(config) {
   globals.uiReady = true; // keeping this construct available as well, for modules that might load asynchronously
 }
 
-// clear cache and reload
-function clearSystemCache() {
-  pauseRefresh();
-  document.getElementById("tech-errors").innerHTML = "";
-
-  const url = `${globals.orchestrator}/api/systems/${globals.system}/cache`;
-  const options = {
-    method: "delete",
-  };
-  orchestratorRequest(url, options).then((response) => {
-    if (!response.ok) {
-      const alert = document
-        .getElementById("alert-template")
-        .innerHTML.replace(
-          /{{message}}/,
-          `ERROR: ${response.status} response from ${globals.orchestrator}/api/systems/${globals.system}/cache`,
-        );
-      document
-        .getElementById("tech-errors")
-        .insertAdjacentHTML("beforeend", alert);
-    }
-    refreshState();
-  });
-}
-
 /* page load listener */
 window.addEventListener("load", async () => {
   // Check for home orchestrator from server config
@@ -604,32 +575,6 @@ window.addEventListener("load", async () => {
 
   // start refreshState loop
   refreshState();
-
-  // listeners for maintenance modal
-  document
-    .getElementById("room-name")
-    .addEventListener("click", handleMaintenanceClick);
-  document
-    .getElementById("maintenance")
-    .addEventListener("click", resetMaintenanceModalTimeout);
-  document
-    .getElementById("config-reload-btn")
-    .addEventListener("click", clearSystemCache);
-  document
-    .querySelector("#maintenance .dismiss")
-    .addEventListener("click", () => {
-      document.getElementById("maintenance").classList.add("hidden");
-      document.getElementById("tech-errors").innerHTML = "";
-    });
-  // TODO bump main content for banners?
-  // icons for maintenance mode banner
-  document
-    .querySelectorAll("#maintenance-mode-warning .icon-container")
-    .forEach((elem) => {
-      elem.innerHTML = document.getElementById(
-        "construction-icon-template",
-      ).innerHTML;
-    });
 });
 
 /* updateStatus listeners */

@@ -2,8 +2,7 @@
 import { globals } from "./globals.js";
 import { orchestratorRequest } from "./orchestrator_request.js";
 import { openModal, setupModals } from "./modals.js";
-import { followPath } from "./utilities.js";
-
+import { followPath, bumpMainContentForBanners } from "./utilities.js";
 import {
   handlePanTiltZoom,
   handlePanTiltZoomStop,
@@ -492,6 +491,8 @@ async function refreshState() {
         document.getElementById("recording-indicator").classList.add("hidden");
       }
     }
+
+    bumpMainContentForBanners(); // default cleanup after modules
 
     // On OK statuses, continue refresh loop
     refresh = window.setTimeout(refreshState, REFRESH_WAIT);

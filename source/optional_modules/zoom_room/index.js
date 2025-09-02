@@ -1,6 +1,7 @@
 /* Global variables */
 import { globals } from "../../js/globals.js";
-// import { updateStatus } from "../../js/main.js";
+import { updateStatus } from "../../js/orchestrator_request.js";
+import { bumpMainContentForBanners } from "../../js/utilities.js";
 import { attachSharedModalListeners, openModal } from "../../js/modals.js";
 import banners from "./components/zoom_banners.html";
 import joinManualModal from "./components/join_manual_modal.html";
@@ -8,9 +9,8 @@ import joinSuggestedModal from "./components/join_suggested_modal.html";
 import leaveModal from "./components/leave_modal.html";
 import abandonedMeetingModal from "./components/abandoned_meeting_modal.html";
 import shareScreenModal from "./components/share_screen_modal.html";
+import sharingKeyTemplate from "./components/sharing_key.html";
 import "./zoom.css";
-
-import { updateStatus } from "../../js/orchestrator_request.js";
 
 /* Zoom variables */
 //let refresh, zoomLeaveTimeoutId;
@@ -19,14 +19,18 @@ import { updateStatus } from "../../js/orchestrator_request.js";
 let guiInitiated = false;
 let zoomData;
 
+function showBanner() {
+  const banner = document.getElementById("zoom-room-notification");
+  banner.classList.remove("hidden");
+  bumpMainContentForBanners();
+}
+
 function joinZoomMeeting(meetingId, password, callback = null) {
   // User feedback: show banner
-  // const banner = document.getElementById("zoom-room-notification");
-  // banner.querySelector(".feedback-message").innerHTML = "Joining meeting ";
-  // banner.querySelector(".meeting-name").innerHTML = meetingId;
-  // banner.classList.remove("hidden");
-
-  // bump main content for banner
+  const banner = document.getElementById("zoom-room-notification");
+  banner.querySelector(".feedback-message").innerHTML =
+    `Joining meeting ${meetingId}`;
+  showBanner();
 
   // Post join request to orchestrator
   const payload = JSON.stringify({
@@ -45,11 +49,14 @@ function joinZoomMeeting(meetingId, password, callback = null) {
 
 function leaveZoomMeeting(callback = null) {
   // User feedback: update banner
-  // const banner = document.getElementById("zoom-room-notification");
-  // banner.querySelector(".feedback-message").innerHTML = "Leaving meeting ";
-  // banner.classList.remove("hidden");
+  const banner = document.getElementById("zoom-room-notification");
+  const currentMeeting = zoomData.meeting?.info?.meeting_name
+    ? zoomData.meeting.info.meeting_name
+    : zoomData.meeting?.info?.meeting_number;
 
-  // bump main content for banner
+  banner.querySelector(".feedback-message").innerHTML =
+    `Leaving meeting: ${currentMeeting}`;
+  showBanner();
 
   // Post leave request to orchestrator
   const payload = JSON.stringify({
@@ -149,6 +156,17 @@ function openManualJoinForm() {
   openModal(null, "manual-zoom-prompt");
 }
 
+// Making this snippet reusable to share with "Leave" button in status banner
+function openLeaveZoomPrompt() {
+  // re-attach submit listeners etc ...
+  const modal = document.getElementById("leave-zoom-prompt");
+  modal
+    .querySelector("button[name=leave-meeting]")
+    .addEventListener("click", handleLeaveSubmit);
+
+  openModal(null, "leave-zoom-prompt");
+}
+
 // Open one of three prompts based on Zoom state:
 function openZoomPrompt() {
   const meetingJoined =
@@ -174,20 +192,111 @@ function openZoomPrompt() {
   }
   // Leave meeting prompt
   else {
-    // re-attach submit listeners etc ...
-    const modal = document.getElementById("leave-zoom-prompt");
-    modal
-      .querySelector("button[name=leave-meeting]")
-      .addEventListener("click", handleLeaveSubmit);
+    // // re-attach submit listeners etc ...
+    // const modal = document.getElementById("leave-zoom-prompt");
+    // modal
+    //   .querySelector("button[name=leave-meeting]")
+    //   .addEventListener("click", handleLeaveSubmit);
 
-    openModal(null, "leave-zoom-prompt");
+    // openModal(null, "leave-zoom-prompt");
+    openLeaveZoomPrompt();
   }
 }
 
 function displayZoomStatus(e) {
-  console.log("time to update the Zoom banner ...", e.detail);
+  zoomData = e.detail.zoom_room;
 
-  // if (e.detail.hasOwnProperty("zoom_room")) {
+  const zoomBanner = document.getElementById("zoom-room-notification");
+  const leaveBtn = zoomBanner.querySelector("button[name=leave-meeting]");
+
+  function showLeaveBtn() {
+    leaveBtn.addEventListener("click", openLeaveZoomPrompt);
+    leaveBtn.addEventListener("touchstart", openLeaveZoomPrompt);
+    leaveBtn.classList.remove("hidden");
+  }
+  function cleanUpLeaveBtn() {
+    leaveBtn.removeEventListener("click", openLeaveZoomPrompt);
+    leaveBtn.removeEventListener("touchstart", openLeaveZoomPrompt);
+    leaveBtn.classList.add("hidden");
+  }
+
+  // Update banner
+  const meetingStatus = zoomData.meeting?.status
+    ? zoomData.meeting.status
+    : false;
+
+  const currentMeeting = zoomData.meeting?.info?.meeting_name
+    ? zoomData.meeting.info.meeting_name
+    : zoomData.meeting?.info?.meeting_number;
+
+  // in_meeting
+  if (meetingStatus === "in_meeting") {
+    zoomBanner.querySelector(".feedback-message").innerHTML =
+      `In meeting: ${currentMeeting}`;
+
+    showLeaveBtn();
+    showBanner();
+  }
+
+  // connecting
+  if (meetingStatus === "connecting") {
+    const connectionStatus = zoomData.meeting.connection_stage;
+
+    // fallback message
+    zoomBanner.querySelector(".feedback-message").innerHTML = currentMeeting
+      ? `Connecting to meeting ${currentMeeting} ...`
+      : "Connecting to meeting ...";
+
+    // overwrite in the case of error
+    if (connectionStatus === "locked") {
+      zoomBanner.querySelector(".feedback-message").innerHTML = currentMeeting
+        ? `Meeting Locked: ${currentMeeting}`
+        : "Meeting Locked";
+    }
+    if (connectionStatus === "needs_passcode") {
+      zoomBanner.querySelector(".feedback-message").innerHTML = currentMeeting
+        ? `Passcode required for ${currentMeeting}.`
+        : "Passcode required. Try again.";
+    }
+    if (connectionStatus === "needs_passcode_wrong_and_retry") {
+      zoomBanner.querySelector(".feedback-message").innerHTML = currentMeeting
+        ? `Wrong passcode for ${currentMeeting}.`
+        : "Wrong passcode. Try again.";
+    }
+
+    cleanUpLeaveBtn();
+    showBanner();
+  }
+
+  // no meeting, clean up banner and leave button
+  if (!meetingStatus || meetingStatus === "not_in_meeting") {
+    zoomBanner.classList.add("hidden");
+    cleanUpLeaveBtn();
+    bumpMainContentForBanners();
+  }
+
+  // Display Sharing Key
+  const sharingKey = zoomData.sharing_key;
+  if (
+    sharingKey &&
+    sharingKey !== document.querySelector(".zoom-sharing-key").innerHTML
+  ) {
+    document.querySelectorAll(".zoom-sharing-key").forEach(function (elem) {
+      elem.innerHTML = sharingKey;
+    });
+    document.getElementById("zoom-sharing-key-container").classList.remove("hidden");
+    // document
+    //   .querySelector("#share-screen-zoom-prompt .zoom-sharing-key")
+    //   .classList.remove("not-available");
+  } else if (!sharingKey) {
+    document.getElementById("zoom-sharing-key-container").classList.add("hidden");
+    // document.querySelector('#share-screen-zoom-prompt .zoom-sharing-key').classList.add( 'not-available' );
+    // document.querySelector('#share-screen-zoom-prompt .zoom-sharing-key').innerHTML = "Not Available";
+  }
+
+  // Check for abandoned Zoom meeting
+
+  // Check for camera and audio mute warnings
 }
 
 function initiateZoomGUI() {
@@ -197,9 +306,15 @@ function initiateZoomGUI() {
     zoomData = globals.state?.zoom_room;
 
     // Add Zoom Room banners to DOM
+    const zoomIconHTML =
+      document.getElementById("zoom-icon-template").innerHTML;
+    const micIconHTML = document.getElementById("mic-icon-template").innerHTML;
+    const bannersHTML = banners
+      .replace(/{{zoom_icon}}/g, zoomIconHTML)
+      .replace(/{{mic_icon}}/g, micIconHTML);
     document
       .getElementById("banners-container")
-      .insertAdjacentHTML("beforeend", banners);
+      .insertAdjacentHTML("beforeend", bannersHTML);
 
     // Add Zoom modals to DOM
     document
@@ -217,6 +332,18 @@ function initiateZoomGUI() {
     document
       .getElementById("plugin-modals-container")
       .insertAdjacentHTML("beforeend", abandonedMeetingModal);
+
+    // Add Sharing Key container to DOM (in main)
+    const shareScreenIconHTML = document.getElementById(
+      "share-screen-icon-template",
+    ).innerHTML;
+    const sharingKeyHTML = sharingKeyTemplate.replace(
+      /{{share_screen_icon}}/g,
+      shareScreenIconHTML,
+    );
+    document
+      .querySelector("main")
+      .insertAdjacentHTML("beforeend", sharingKeyHTML);
 
     // Attach listeners to all controls tagged data-zoom-room-input
     document.querySelectorAll("[data-zoom-room-input]").forEach((input) => {

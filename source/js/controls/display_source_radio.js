@@ -21,13 +21,6 @@ import {
 function setDisplaySourceOptionState(btn, state) {
   const container = btn.parentElement;
   const channel = container.getAttribute("data-channel"); // evaluates falsey if unset
-  const zoomRoom =
-    btn.getAttribute("data-zoom-room-controller") === "true" ? true : false;
-  const shareScreenModal =
-    btn.getAttribute("data-zoom-share-screen-modal-launcher") === "true"
-      ? true
-      : false;
-  let powerOverride = false;
 
   // check for power or pause state override
   if (channel) {
@@ -43,48 +36,10 @@ function setDisplaySourceOptionState(btn, state) {
           .getAttribute("data-value") === "true")
     ) {
       btn.setAttribute("data-override", "true");
-      powerOverride = true;
     }
-    // clear override?
+    // clear override
     else {
       btn.setAttribute("data-override", "false");
-    }
-  }
-
-  // Zoom vs Share Screen button disambiguation
-  if (!powerOverride && (zoomRoom || shareScreenModal)) {
-    const otherZoomButton = zoomRoom
-      ? container.querySelector("[data-zoom-share-screen-modal-launcher=true]")
-      : container.querySelector("[data-zoom-room-controller=true]");
-
-    if (btn.getAttribute("data-selected-zoom-input") === "false") {
-      btn.setAttribute("data-override", "true");
-    } else if (btn.getAttribute("data-selected-zoom-input") === "true") {
-      btn.setAttribute("data-override", "false");
-    }
-    // check for "uninitiated" state
-    else if (
-      otherZoomButton &&
-      otherZoomButton.getAttribute("data-selected-zoom-input") !== "true"
-    ) {
-      // in this case, arbitrarily pick the data-zoom-room-controller to be highlighted
-      if (container.querySelector("[data-zoom-room-controller=true]")) {
-        container
-          .querySelector("[data-zoom-room-controller=true]")
-          .setAttribute("data-selected-zoom-input", "true");
-        container
-          .querySelector("[data-zoom-share-screen-modal-launcher=true]")
-          .setAttribute("data-selected-zoom-input", "false");
-
-        if (shareScreenModal) {
-          btn.setAttribute("data-override", "true");
-        }
-      }
-      // if for some reason there's a Share Screen button but no Zoom button, don't override Share Screen state
-      else {
-        btn.setAttribute("data-selected-zoom-input", "true");
-        btn.setAttribute("data-override", "false");
-      }
     }
   }
 

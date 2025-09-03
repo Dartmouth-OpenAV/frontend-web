@@ -13,10 +13,7 @@ import sharingKeyTemplate from "./components/sharing_key.html";
 import "./zoom.css";
 
 /* Zoom variables */
-//let refresh, zoomLeaveTimeoutId;
 //const abandonedZoomWaitTime = 7200000; // milliseconds (2hs)
-
-let guiInitiated = false;
 let zoomData;
 
 function showBanner() {
@@ -301,49 +298,53 @@ function displayZoomStatus(e) {
 
 function initiateZoomGUI() {
   // make sure elements only get initialized once, and listeners only get attached if zoom_room configured
-  if (!guiInitiated && globals.state?.zoom_room) {
+  if (globals.state?.zoom_room) {
     // Initiate zoomData object with globals.state (which should be assigned before ui_ready fires)
     zoomData = globals.state?.zoom_room;
 
-    // Add Zoom Room banners to DOM
-    const zoomIconHTML =
-      document.getElementById("zoom-icon-template").innerHTML;
-    const micIconHTML = document.getElementById("mic-icon-template").innerHTML;
-    const bannersHTML = banners
-      .replace(/{{zoom_icon}}/g, zoomIconHTML)
-      .replace(/{{mic_icon}}/g, micIconHTML);
-    document
-      .getElementById("banners-container")
-      .insertAdjacentHTML("beforeend", bannersHTML);
+    // If Zoom banners not present already, add to DOM
+    if (!document.getElementById("zoom-room-notification")) {
+      const zoomIconHTML =
+        document.getElementById("zoom-icon-template").innerHTML;
+      const micIconHTML = document.getElementById("mic-icon-template").innerHTML;
+      const bannersHTML = banners
+        .replace(/{{zoom_icon}}/g, zoomIconHTML)
+        .replace(/{{mic_icon}}/g, micIconHTML);
+      document
+        .getElementById("banners-container")
+        .insertAdjacentHTML("beforeend", bannersHTML);
 
-    // Add Zoom modals to DOM
-    document
-      .getElementById("plugin-modals-container")
-      .insertAdjacentHTML("beforeend", joinSuggestedModal);
-    document
-      .getElementById("plugin-modals-container")
-      .insertAdjacentHTML("beforeend", joinManualModal);
-    document
-      .getElementById("plugin-modals-container")
-      .insertAdjacentHTML("beforeend", leaveModal);
-    document
-      .getElementById("plugin-modals-container")
-      .insertAdjacentHTML("beforeend", shareScreenModal);
-    document
-      .getElementById("plugin-modals-container")
-      .insertAdjacentHTML("beforeend", abandonedMeetingModal);
+      // Add Zoom modals to DOM
+      document
+        .getElementById("plugin-modals-container")
+        .insertAdjacentHTML("beforeend", joinSuggestedModal);
+      document
+        .getElementById("plugin-modals-container")
+        .insertAdjacentHTML("beforeend", joinManualModal);
+      document
+        .getElementById("plugin-modals-container")
+        .insertAdjacentHTML("beforeend", leaveModal);
+      document
+        .getElementById("plugin-modals-container")
+        .insertAdjacentHTML("beforeend", shareScreenModal);
+      document
+        .getElementById("plugin-modals-container")
+        .insertAdjacentHTML("beforeend", abandonedMeetingModal);
+    }
 
-    // Add Sharing Key container to DOM (in main)
-    const shareScreenIconHTML = document.getElementById(
-      "share-screen-icon-template",
-    ).innerHTML;
-    const sharingKeyHTML = sharingKeyTemplate.replace(
-      /{{share_screen_icon}}/g,
-      shareScreenIconHTML,
-    );
-    document
-      .querySelector("main")
-      .insertAdjacentHTML("beforeend", sharingKeyHTML);
+    // If Sharing Key container not present, add to DOM (in main)
+    if (!document.getElementById("zoom-sharing-key-container")) {
+      const shareScreenIconHTML = document.getElementById(
+        "share-screen-icon-template",
+      ).innerHTML;
+      const sharingKeyHTML = sharingKeyTemplate.replace(
+        /{{share_screen_icon}}/g,
+        shareScreenIconHTML,
+      );
+      document
+        .querySelector("main")
+        .insertAdjacentHTML("beforeend", sharingKeyHTML);
+    }
 
     // Attach listeners to all controls tagged data-zoom-room-input
     document.querySelectorAll("[data-zoom-room-input]").forEach((input) => {
@@ -352,7 +353,8 @@ function initiateZoomGUI() {
 
     // Attach static listeners to inputs in custom Zoom modals, eg. Cancel/Back dismiss buttons
     attachSharedModalListeners();
-    // Special extra handlers for the dismiss-modal buttons:
+
+    // Special extra handlers for the dismiss-modal buttons (clean up Zoom handlers):
     document
       .querySelector("#scheduled-zoom-prompt button.dismiss-modal")
       .addEventListener("click", () => {
@@ -397,8 +399,6 @@ function initiateZoomGUI() {
     // document.querySelectorAll("#sip-toggle button").forEach(function(button){
     //   button.addEventListener("click", toggleSip);
     // });
-
-    guiInitiated = true;
 
     // Start listening for state changes from main
     window.addEventListener("new_state", displayZoomStatus);

@@ -1,0 +1,28 @@
+:root {
+    --bluetooth-blue: #0a3d91;
+}
+
+.banner#bluetooth-status-notification {
+    background-color: var(--bluetooth-blue);
+    border: 0.10rem solid darken(var(--bluetooth-blue), 10%);
+
+    .icon-container {
+        margin-right: 0;
+    }
+
+    .countdown-container {
+        align-self: center;
+    }
+
+    .connected-status-container {
+        align-self: center;
+    }
+
+    button {
+        color: var(--bluetooth-blue);
+
+        &.active {
+            background-color: lighten(var(--bluetooth-blue), 10%);
+        }
+    }
+}

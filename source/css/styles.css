@@ -97,13 +97,12 @@ h2 {
   padding-top: calc(var(--room-header-height) + 2.5rem);
 }
 
-.primary-control-group:first-of-type { /* Banner accomodations */
+.primary-control-group { /* Banner accomodations */
   padding-top: calc(var(--room-header-height) + 2.5rem);
 }
-.primary-control-group:first-of-type.banners-active {
+.primary-control-group.banners-active {
   padding-top: calc(var(--num-banners) * var(--banner-height) + var(--room-header-height) + 2.5rem);
 }
-
 
 /* icons */
 .icon {

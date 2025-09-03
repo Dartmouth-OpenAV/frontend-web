@@ -101,6 +101,21 @@ function sendUIInteractionUpdate() {
   updateStatus(payload, null);
 }
 
+// Add bumpmaincontent
+function bumpMainContentForBanners() {
+  const mainContent = document.querySelector(".primary-control-group");
+  const currBanners = document.querySelectorAll(
+    "#banners-container > :not(.hidden)",
+  ).length;
+  mainContent.style = `--num-banners:${currBanners}`;
+
+  if (currBanners > 0) {
+    mainContent.classList.add("banners-active");
+  } else {
+    mainContent.classList.remove("banners-active");
+  }
+}
+
 // Export functions
 export {
   mergeJSON,
@@ -110,4 +125,5 @@ export {
   useProgressBar,
   appendUIInteractionJSON,
   sendUIInteractionUpdate,
+  bumpMainContentForBanners,
 };

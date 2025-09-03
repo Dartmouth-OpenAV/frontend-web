@@ -1,0 +1,35 @@
+	<!-- Bluetooth Pairing modal -->
+	<div id="bluetooth-pairing" class="modal modal-full hidden" data-timeout="5">
+		<div class="modal-content">
+			<div id="bluetooth-description">
+				<p>Connect your device to the room with Bluetooth
+					<br>BT Name: {{room_name}}</p>
+			</div>
+			<button id="bluetooth-pairing-start-button" type="button" class="text-only" name="start-bluetooth-pairing" tabindex="0">
+				<div class="icon-container">
+					<svg
+						class="icon"
+						viewBox="-5 0 45 45"
+						preserveAspectRatio="xMidYMid meet">
+						<g transform="scale(0.05)">
+							<path d="m157 330 305 307-147 178V179l147 170-305 299" stroke-width="53" class="outline" />
+						</g>
+					</svg>
+				</div>
+				<br>
+				<div class="button-label">Start Pairing</div>
+			</button>
+			<div id="bluetooth-pairing-countdown" class="hidden">
+				<h1>Connecting</h1>
+				<p>The room is discoverable for the next <span class="counter">60</span> seconds</p>
+			</div>
+			<div>
+				<button id="bluetooth-pairing-back-button" type="button" class="text-only" name="dismiss-bluetooth-pairing" tabindex="0">
+					<div class="button-label">Back</div>
+				</button>
+				<button id="bluetooth-pairing-cancel-button" type="button" class="text-only focus hidden" name="cancel-bluetooth-pairing" tabindex="0">
+					<div class="button-label">Cancel</div>
+				</button>
+			</div>
+		</div>
+	</div>

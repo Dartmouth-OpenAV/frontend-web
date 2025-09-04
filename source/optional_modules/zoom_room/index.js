@@ -75,16 +75,9 @@ function handleSuggestedJoinSubmit() {
   const submitBtn = modal.querySelector("button[name=join-suggested-meeting]"); // TO DO: refactor to use form/submit?
   submitBtn.removeEventListener("click", handleSuggestedJoinSubmit);
 
-  // user feedback: style submit button
-  //submitBtn.classList.add(??)
-
   // callback for updateStatus
   function reset() {
-    // hide suggested join modal
     modal.classList.add("hidden");
-
-    // style buttons active
-    //submitBtn.classList.remove(??)
   }
 
   joinZoomMeeting(
@@ -102,20 +95,13 @@ function handleManualJoinSubmit(e) {
   // remove submit listener
   form.removeEventListener("submit", handleManualJoinSubmit);
 
-  // user feedback: style submit button
-  //submitBtn.classList.add(??)
-
   // get values from form
   const meetingId = form.querySelector("input[name=meeting_id]").value;
   const password = form.querySelector("input[name=password]").value;
 
   // callback for updateStatus
   function reset() {
-    // hide manual join modal
     modal.classList.add("hidden");
-
-    // style buttons active
-    //submitBtn.classList.remove(??)
   }
 
   joinZoomMeeting(meetingId, password, reset);
@@ -127,14 +113,9 @@ function handleLeaveSubmit() {
   const submitBtn = modal.querySelector("button[name=leave-meeting]"); // TO DO: refactor to use form/submit?
   submitBtn.removeEventListener("click", handleLeaveSubmit);
 
-  // user feedback: style submit button
-
+  // callback for updateStatus
   function reset() {
-    // hide leave modal
     modal.classList.add("hidden");
-
-    // style buttons active
-    //submitBtn.classList.remove(??)
   }
 
   leaveZoomMeeting(reset);
@@ -189,13 +170,6 @@ function openZoomPrompt() {
   }
   // Leave meeting prompt
   else {
-    // // re-attach submit listeners etc ...
-    // const modal = document.getElementById("leave-zoom-prompt");
-    // modal
-    //   .querySelector("button[name=leave-meeting]")
-    //   .addEventListener("click", handleLeaveSubmit);
-
-    // openModal(null, "leave-zoom-prompt");
     openLeaveZoomPrompt();
   }
 }
@@ -281,19 +255,40 @@ function displayZoomStatus(e) {
     document.querySelectorAll(".zoom-sharing-key").forEach(function (elem) {
       elem.innerHTML = sharingKey;
     });
-    document.getElementById("zoom-sharing-key-container").classList.remove("hidden");
-    // document
-    //   .querySelector("#share-screen-zoom-prompt .zoom-sharing-key")
-    //   .classList.remove("not-available");
+    document
+      .getElementById("zoom-sharing-key-container")
+      .classList.remove("hidden");
+    document
+      .querySelector("#share-screen-zoom-prompt .zoom-sharing-key")
+      .classList.remove("not-available");
   } else if (!sharingKey) {
-    document.getElementById("zoom-sharing-key-container").classList.add("hidden");
-    // document.querySelector('#share-screen-zoom-prompt .zoom-sharing-key').classList.add( 'not-available' );
-    // document.querySelector('#share-screen-zoom-prompt .zoom-sharing-key').innerHTML = "Not Available";
+    document
+      .getElementById("zoom-sharing-key-container")
+      .classList.add("hidden");
+    document
+      .querySelector("#share-screen-zoom-prompt .zoom-sharing-key")
+      .classList.add("not-available");
+    document.querySelector(
+      "#share-screen-zoom-prompt .zoom-sharing-key",
+    ).innerHTML = "Not Available";
   }
 
-  // Check for abandoned Zoom meeting
-
   // Check for camera and audio mute warnings
+}
+
+// Check for other Zoom inputs (eg. a Share Screen button) and set data-override
+// to true so they will not display as active
+function selectZoomInput(input) {
+  console.log("selectZoomInput", input);
+  // De-select all Zoom inputs
+  document
+    .querySelectorAll("[data-zoom-meeting-prompt],[data-zoom-share-prompt]")
+    .forEach((elem) => {
+      elem.setAttribute("data-override", "true");
+    });
+
+  // Re-select the requested input
+  input.setAttribute("data-override", "false");
 }
 
 function initiateZoomGUI() {
@@ -346,9 +341,21 @@ function initiateZoomGUI() {
         .insertAdjacentHTML("beforeend", sharingKeyHTML);
     }
 
-    // Attach listeners to all controls tagged data-zoom-room-input
-    document.querySelectorAll("[data-zoom-room-input]").forEach((input) => {
-      input.addEventListener("click", openZoomPrompt);
+    // Attach listeners to all controls tagged data-zoom-meeting-prompt
+    document.querySelectorAll("[data-zoom-meeting-prompt]").forEach((input) => {
+      // input.addEventListener("click", openZoomPrompt);
+      input.addEventListener("click", () => {
+        openZoomPrompt();
+        selectZoomInput(input);
+      });
+    });
+
+    // Attach listeners to all controls tagged data-zoom-sharing-prompt
+    document.querySelectorAll("[data-zoom-share-prompt]").forEach((input) => {
+      input.addEventListener("click", () => {
+        openModal(null, "share-screen-zoom-prompt");
+        selectZoomInput(input);
+      });
     });
 
     // Attach static listeners to inputs in custom Zoom modals, eg. Cancel/Back dismiss buttons

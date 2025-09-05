@@ -6,7 +6,7 @@
 
 import { updateStatus } from "../orchestrator_request.js";
 import { setDisplaySourceOptionState } from "./display_source_radio.js";
-import { followPath, appendUIInteractionJSON } from "../utilities.js";
+import { appendUIInteractionJSON } from "../utilities.js";
 
 function setVideoMuteButtonState(btn, state) {
   // when video is muted, color the button, show the slash, and change text to
@@ -58,12 +58,12 @@ function handleVideoMute(e) {
   // visual feedback
   setVideoMuteButtonState(btn, newState);
 
-  // callback
-  function reset(response) {
-    const pathAsObj = JSON.parse(path.replace(/<value>/, '""'));
-    const returnedState = followPath(pathAsObj, response);
+  // callback from updateStatus
+  function reset() {
+    // reattach listeners
+    btn.addEventListener("click", handleVideoMute);
+    btn.addEventListener("touchstart", handleVideoMute);
     btn.setAttribute("data-allow-events", "");
-    setVideoMuteButtonState(btn, returnedState.value);
   }
 
   // update backend

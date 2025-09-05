@@ -50,6 +50,13 @@ function setDisplaySourceOptionState(btn, state) {
 function handleDisplaySourceSelect(e) {
   const btn = e.target;
   const container = btn.parentElement;
+  const channel = container.getAttribute("data-channel");
+  const linkedPowerButtons = channel
+    ? document.querySelectorAll(`.power-button[data-channel="${channel}"]`)
+    : false;
+  const linkedPauseButtons = channel
+    ? document.querySelectorAll(`.pause-button[data-channel="${channel}"]`)
+    : false;
 
   // only switch input if the tapped input is not already selected
   if (!btn.classList.contains("active")) {
@@ -63,137 +70,126 @@ function handleDisplaySourceSelect(e) {
       input.removeAttribute("data-allow-events");
     });
 
-    // visual feedback
-    if (container.querySelector("[data-value=true]") !== null) {
-      setDisplaySourceOptionState(
-        container.querySelector("[data-value=true]"),
-        false,
-      ); // clear any previous selection
-    }
-    setDisplaySourceOptionState(btn, true);
-
-    // callback
+    // callback for updateStatus
     function reset(response) {
-      // set input option states
+      // re-attach click listeners on radio options
       container.querySelectorAll(".radio-option").forEach((input) => {
-        const path = input.getAttribute("data-path");
-        const pathAsObj = JSON.parse(path.replace(/<value>/, '""'));
-        let returnedState = followPath(pathAsObj, response);
+        input.addEventListener("click", handleDisplaySourceSelect);
+        input.addEventListener("touchstart", handleDisplaySourceSelect);
         input.setAttribute("data-allow-events", "");
-        setDisplaySourceOptionState(input, returnedState.value);
       });
 
-      // set video mute state if it was updated
+      // re-attach click listeners on any linked video_mute buttons
       if (pauseActionInitiated) {
-        document
-          .querySelectorAll(`.pause-button[data-channel="${channel}"]`)
-          .forEach((pauseBtn) => {
-            const path = pauseBtn.getAttribute("data-path");
-            const pathAsObj = JSON.parse(path.replace(/<value>/, '""'));
-            let returnedState = followPath(pathAsObj, response);
-            pauseBtn.setAttribute("data-allow-events", "");
-            setVideoMuteButtonState(pauseBtn, returnedState.value);
-          });
+        linkedPauseButtons.forEach((btn) => {
+          btn.addEventListener("click", handleVideoMute);
+          btn.addEventListener("touchstart", handleVideoMute);
+          btn.setAttribute("data-allow-events", "");
+        });
       }
 
-      // check if a power up was initiated and needs to be reflected in UI/reset
+      // re-attach click listeners on linked power buttons and show warm-up bar
       if (powerActionInitiated) {
-        function resetPowerButton(powerBtn, state) {
-          powerBtn.setAttribute("data-allow-events", "");
-          setPowerState(powerBtn, state);
-        }
+        // start warm up timer if configured
+        linkedPowerButtons.forEach((btn) => {
+          // check that power status is true ie. the power up call we just initiated actually worked
+          const powerButtonPathAsObj = JSON.parse(
+            btn.getAttribute("data-path").replace(/<value>/, '""'),
+          );
+          const powerState = followPath(powerButtonPathAsObj, response);
 
-        // warmup bars for linked power buttons?
-        document
-          .querySelectorAll(`.power-button[data-channel="${channel}"]`)
-          .forEach((btn) => {
-            // check that power status is true ie. the power up call we just initiated actually worked
-            const powerButtonPathAsObj = JSON.parse(
-              btn.getAttribute("data-path").replace(/<value>/, '""'),
+          // if power on was successful and warm up duration is configured,
+          // show progress bar and continue blocking clicks until timeout
+          if (powerState.value && btn.getAttribute("data-duration")) {
+            // e.g. if the power up was successful
+            const progressDuration = parseInt(
+              btn.getAttribute("data-duration"),
             );
-            const powerState = followPath(powerButtonPathAsObj, response);
-            // check if we need a warmup timeout
-            if (powerState.value && btn.getAttribute("data-duration")) {
-              // e.g. if the power up was successful
-              const progressDuration = parseInt(
-                btn.getAttribute("data-duration"),
-              );
-              const progress =
-                btn.parentElement.parentElement.querySelector(".progress");
-              useProgressBar(
-                progress,
-                progressDuration,
-                "warming",
-                function () {
-                  resetPowerButton(btn, powerState.value);
-                },
-              );
-            } else {
-              // if update failed or there's no progress bar, reset power button immediately
-              resetPowerButton(btn, powerState.value);
-            }
-          });
+            const progress =
+              btn.parentElement.parentElement.querySelector(".progress");
+
+            useProgressBar(progress, progressDuration, "warming", function () {
+              btn.addEventListener("click", handleTogglePower);
+              btn.addEventListener("touchstart", handleTogglePower);
+              btn.setAttribute("data-allow-events", "");
+            });
+
+            // if power on failed or there's no progress bar, re-attach listeners immediately
+          } else {
+            btn.addEventListener("click", handleTogglePower);
+            btn.addEventListener("touchstart", handleTogglePower);
+            btn.setAttribute("data-allow-events", "");
+          }
+        });
       }
     }
 
-    // update backend
+    // start building payload
     const path = btn.getAttribute("data-path");
     let postData = path.replace(/<value>/, true);
 
     // check if this should intiate power up on linked power button(s)
-    const channel = btn.parentElement.getAttribute("data-channel"); // evaluates falsey if unset
     if (channel) {
-      document
-        .querySelectorAll(`.power-button[data-channel="${channel}"]`)
-        .forEach((powerBtn) => {
-          // if the current power state is false, turn on the display
-          if (powerBtn.getAttribute("data-value") === "false") {
-            const extraData = powerBtn
-              .getAttribute("data-path")
-              .replace(/<value>/, true);
+      linkedPowerButtons.forEach((powerBtn) => {
+        // if the current power state is false, turn on the display
+        if (powerBtn.getAttribute("data-value") === "false") {
+          const extraData = powerBtn
+            .getAttribute("data-path")
+            .replace(/<value>/, true);
 
-            // to do: explicitly make sure power comes before input select
-            let mergedJSON = mergeJSON(
-              JSON.parse(extraData),
-              JSON.parse(postData),
-            );
+          // to do: explicitly make sure power comes before input select
+          let mergedJSON = mergeJSON(
+            JSON.parse(extraData),
+            JSON.parse(postData),
+          );
 
-            postData = JSON.stringify(mergedJSON);
+          postData = JSON.stringify(mergedJSON);
 
-            // block power clicks & show visual feedback on the button
-            powerBtn.removeEventListener("click", handleTogglePower);
-            powerBtn.removeEventListener("touchstart", handleTogglePower);
-            powerBtn.removeAttribute("data-allow-events");
-            setPowerState(powerBtn, true);
+          // block power clicks & show visual feedback on the button
+          powerBtn.removeEventListener("click", handleTogglePower);
+          powerBtn.removeEventListener("touchstart", handleTogglePower);
+          powerBtn.removeAttribute("data-allow-events");
+          console.log("Setting linkePowerButton to true");
+          setPowerState(powerBtn, true);
 
-            powerActionInitiated = true;
-          }
-        });
+          powerActionInitiated = true;
+        }
+      });
 
       // check if selection should trigger video mute = false on the channel
-      document
-        .querySelectorAll(`.pause-button[data-channel="${channel}"]`)
-        .forEach((pauseBtn) => {
-          if (pauseBtn.getAttribute("data-value") === "true") {
-            const extraData = pauseBtn
-              .getAttribute("data-path")
-              .replace(/<value>/, false);
-            let mergedJSON = mergeJSON(
-              JSON.parse(postData),
-              JSON.parse(extraData),
-            );
-            postData = JSON.stringify(mergedJSON);
+      linkedPauseButtons.forEach((pauseBtn) => {
+        if (pauseBtn.getAttribute("data-value") === "true") {
+          const extraData = pauseBtn
+            .getAttribute("data-path")
+            .replace(/<value>/, false);
+          let mergedJSON = mergeJSON(
+            JSON.parse(postData),
+            JSON.parse(extraData),
+          );
+          postData = JSON.stringify(mergedJSON);
 
-            // block pause clicks & show visual feedback:
-            pauseBtn.removeEventListener("click", handleVideoMute);
-            pauseBtn.removeEventListener("touchstart", handleVideoMute);
-            pauseBtn.removeAttribute("data-allow-events");
-            setVideoMuteButtonState(pauseBtn, false);
+          // block pause clicks & show visual feedback:
+          pauseBtn.removeEventListener("click", handleVideoMute);
+          pauseBtn.removeEventListener("touchstart", handleVideoMute);
+          pauseBtn.removeAttribute("data-allow-events");
+          setVideoMuteButtonState(pauseBtn, false);
 
-            pauseActionInitiated = true;
-          }
-        });
+          pauseActionInitiated = true;
+        }
+      });
     }
+
+    // Visual feedback; Note: Needs to happen after linked power is set
+    // so that override gets removed
+    // clear any previous selection(s)
+    if (container.querySelector("[data-value=true]") !== null) {
+      container.querySelectorAll("[data-value=true]").forEach((input) => {
+        setDisplaySourceOptionState(input, false);
+      });
+    }
+    // set new selection state
+    setDisplaySourceOptionState(btn, true);
+
     updateStatus(appendUIInteractionJSON(postData), reset);
   }
 }

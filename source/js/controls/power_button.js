@@ -6,10 +6,7 @@
 
 import { updateStatus } from "../orchestrator_request.js";
 import { setButtonState } from "./toggle_button.js";
-import {
-  handleVideoMute,
-  setVideoMuteButtonState,
-} from "./video_mute_button.js";
+import { handleVideoMute } from "./video_mute_button.js";
 import {
   setDisplaySourceOptionState,
   handleDisplaySourceSelect,
@@ -200,14 +197,10 @@ function handleTogglePower(e) {
     // block clicks
     dettachClickListeners();
 
-    // visual feedback: power button
-    btn.classList.toggle("active");
-
-    // visual feedback: linked controls
+    // build payload
     if (channel) {
-      // on power up, show pause button and select default input
+      // on power up, select default input for each linked radio group
       if (newState === true) {
-        // select a default input for each linked radio
         document
           .querySelectorAll(`.display-source-radio[data-channel="${channel}"]`)
           .forEach((radio) => {
@@ -236,9 +229,8 @@ function handleTogglePower(e) {
             const selectedInput = radio.querySelector(
               `[data-option=${defaultInput}]`,
             );
-
-            // visual feedback
-            selectedInput.classList.add("active");
+            // make sure data-value gets set for setPowerState to read
+            selectedInput.setAttribute("data-value", true);
 
             // add to payload
             const extraData = selectedInput
@@ -250,20 +242,10 @@ function handleTogglePower(e) {
             );
             postData = JSON.stringify(mergedJSON);
           });
-
-        // unhide linked video mute buttons
-        linkedPauseButtons.forEach((pauseBtn) => {
-          pauseBtn.classList.remove("invisible");
-        });
       }
-
       // on power off, visually deselect input (no payload update)
       // but hide and update video mute
       else {
-        linkedInputs.forEach((input) => {
-          input.classList.remove("active");
-        });
-
         linkedPauseButtons.forEach((pauseBtn) => {
           const extraData = pauseBtn
             .getAttribute("data-path")
@@ -273,11 +255,12 @@ function handleTogglePower(e) {
             JSON.parse(extraData),
           );
           postData = JSON.stringify(mergedJSON);
-
-          pauseBtn.classList.add("invisible");
         });
       }
     }
+
+    // visual feedback (wait in case default input selected)
+    setPowerState(btn, newState);
 
     updateStatus(appendUIInteractionJSON(postData), reset);
   }

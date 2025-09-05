@@ -5,7 +5,7 @@
  */
 import { updateStatus } from "../orchestrator_request.js";
 import { setVolumeSliderState } from "./volume_slider.js";
-import { followPath, appendUIInteractionJSON } from "../utilities.js";
+import { appendUIInteractionJSON } from "../utilities.js";
 
 function setMuteButtonState(btn, state) {
   // everything is topsy turvy in mute land ...
@@ -53,12 +53,12 @@ function handleMuteButton(e) {
   const newValue = btn.getAttribute("data-value") === "true" ? false : true;
   setMuteButtonState(btn, newValue);
 
-  // callback
-  function reset(response) {
-    const pathAsObj = JSON.parse(path.replace(/<value>/, '""'));
-    let returnedState = followPath(pathAsObj, response);
+  // callback for updateStatus
+  function reset() {
+    // reattach listeners
     btn.setAttribute("data-allow-events", "");
-    setMuteButtonState(btn, returnedState.value);
+    btn.addEventListener("click", handleMuteButton);
+    btn.addEventListener("touchstart", handleMuteButton);
   }
 
   // update backend

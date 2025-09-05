@@ -4,7 +4,7 @@
  *
  */
 import { updateStatus } from "../orchestrator_request.js";
-import { followPath, appendUIInteractionJSON } from "../utilities.js";
+import { appendUIInteractionJSON } from "../utilities.js";
 
 function setButtonState(btn, state, handler) {
   if (state === true && btn.getAttribute("data-override") !== "true") {
@@ -34,12 +34,12 @@ function handleToggleButton(e) {
   const newState = btn.getAttribute("data-value") === "true" ? false : true;
   setButtonState(btn, newState, handleToggleButton);
 
-  // callback
-  function reset(response) {
-    const pathAsObj = JSON.parse(path.replace(/<value>/, '""'));
-    let returnedState = followPath(pathAsObj, response);
+  // callback for updateStatus
+  function reset() {
+    // reattach listeners
+    btn.addEventListener("click", handleToggleButton);
+    btn.addEventListener("touchstart", handleToggleButton);
     btn.setAttribute("data-allow-events", "");
-    setButtonState(btn, returnedState.value, handleToggleButton);
   }
 
   // update backend

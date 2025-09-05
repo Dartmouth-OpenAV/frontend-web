@@ -7,20 +7,19 @@
 
 import { updateStatus } from "../orchestrator_request.js";
 import { setButtonState } from "./toggle_button.js";
-import { followPath, appendUIInteractionJSON } from "../utilities.js";
+import { appendUIInteractionJSON } from "../utilities.js";
 
 function handleRadioSelect(e) {
   const btn = e.target;
   const container = btn.parentElement;
 
-  // callback
-  function reset(response) {
+  // callback for updateStatus
+  function reset() {
+    // reattach listeners
     container.querySelectorAll(".radio-option").forEach((option) => {
-      const path = option.getAttribute("data-path");
-      const pathAsObj = JSON.parse(path.replace(/<value>/, '""'));
-      let returnedState = followPath(pathAsObj, response);
+      option.addEventListener("click", handleRadioSelect);
+      option.addEventListener("touchstart", handleRadioSelect);
       option.setAttribute("data-allow-events", "");
-      setButtonState(option, returnedState.value, handleRadioSelect);
     });
   }
 
@@ -35,11 +34,10 @@ function handleRadioSelect(e) {
 
     // visual feedback
     if (container.querySelector("[data-value=true]") !== null) {
-      setButtonState(
-        container.querySelector("[data-value=true]"),
-        false,
-        handleRadioSelect,
-      ); // clear any previous selection
+      // clear any previous selection(s)
+      container.querySelectorAll("[data-value=true]").forEach((option) => {
+        setButtonState(option, false, handleRadioSelect);
+      });
     }
     setButtonState(btn, true, handleRadioSelect);
 

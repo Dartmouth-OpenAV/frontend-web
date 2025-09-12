@@ -82,10 +82,18 @@ const enqueue = (func, callback) => {
 // pausing/resuming the main refreshStatus loop
 function updateStatus(payload, callback = null) {
   // make sure global orchestrator and system variables are set
-  if (!globals.orchestrator || !globals.system) {
+  if (!globals.getOrchestrator() || !globals.getSystem()) {
     return null; // TO DO: improve handling for this scenario
   }
   // OK to proceed
+  // Add UI interaction if environment_sensing is present
+  if (globals.getState()?.environment_sensing) {
+    let obj = JSON.parse(payload);
+    obj["environment_sensing"] = {
+      ui_interactions: { occupancy_detected: true },
+    };
+    payload = JSON.stringify(obj);
+  }
 
   // Tell main refreshStatus loop to pause while system state updates
   window.dispatchEvent(new Event("update_started"));
@@ -95,7 +103,7 @@ function updateStatus(payload, callback = null) {
     method: "PUT",
     body: payload,
   };
-  const url = `${globals.orchestrator}/api/systems/${globals.system}/state`;
+  const url = `${globals.getOrchestrator()}/api/systems/${globals.getSystem()}/state`;
   enqueue(() => orchestratorRequest(url, options), callback);
 }
 

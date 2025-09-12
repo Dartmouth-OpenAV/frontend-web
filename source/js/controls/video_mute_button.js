@@ -6,7 +6,6 @@
 
 import { updateStatus } from "../orchestrator_request.js";
 import { setDisplaySourceOptionState } from "./display_source_radio.js";
-import { appendUIInteractionJSON } from "../utilities.js";
 
 function setVideoMuteButtonState(btn, state) {
   // when video is muted, color the button, show the slash, and change text to
@@ -67,7 +66,7 @@ function handleVideoMute(e) {
   }
 
   // update backend
-  updateStatus(appendUIInteractionJSON(payload), reset);
+  updateStatus(payload, reset);
 }
 
 // Export functions

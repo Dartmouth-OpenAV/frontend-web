@@ -6,7 +6,6 @@
 
 // import { updateStatus } from "../main.js";
 import { updateStatus } from "../orchestrator_request.js";
-import { appendUIInteractionJSON } from "../utilities.js";
 
 function handlePanTiltZoom(e) {
   var btn = e.target;
@@ -19,7 +18,7 @@ function handlePanTiltZoom(e) {
   const payload = btn.parentElement
     .getAttribute("data-path")
     .replace(/<value>/, value);
-  updateStatus(appendUIInteractionJSON(payload), null);
+  updateStatus(payload, null);
 }
 
 function handlePanTiltZoomStop(e) {
@@ -36,7 +35,7 @@ function handlePanTiltZoomStop(e) {
   const payload = btn.parentElement
     .getAttribute("data-path")
     .replace(/<value>/, value);
-  updateStatus(appendUIInteractionJSON(payload), null);
+  updateStatus(payload, null);
 }
 
 // Export functions

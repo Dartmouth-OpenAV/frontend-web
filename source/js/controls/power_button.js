@@ -17,7 +17,6 @@ import {
   countdown,
   countdownTimeoutId,
   useProgressBar,
-  appendUIInteractionJSON,
 } from "../utilities.js";
 
 const shutdownWarningTime = 60; // seconds
@@ -262,7 +261,7 @@ function handleTogglePower(e) {
     // visual feedback (wait in case default input selected)
     setPowerState(btn, newState);
 
-    updateStatus(appendUIInteractionJSON(postData), reset);
+    updateStatus(postData, reset);
   }
 
   // Main:

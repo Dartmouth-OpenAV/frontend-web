@@ -284,12 +284,16 @@ function displayZoomStatus(e) {
     document.querySelectorAll(".zoom-sharing-key").forEach(function (elem) {
       elem.innerHTML = sharingKey;
     });
-    document.getElementById("zoom-sharing-key-container").classList.remove("hidden");
+    document
+      .getElementById("zoom-sharing-key-container")
+      .classList.remove("hidden");
     // document
     //   .querySelector("#share-screen-zoom-prompt .zoom-sharing-key")
     //   .classList.remove("not-available");
   } else if (!sharingKey) {
-    document.getElementById("zoom-sharing-key-container").classList.add("hidden");
+    document
+      .getElementById("zoom-sharing-key-container")
+      .classList.add("hidden");
     // document.querySelector('#share-screen-zoom-prompt .zoom-sharing-key').classList.add( 'not-available' );
     // document.querySelector('#share-screen-zoom-prompt .zoom-sharing-key').innerHTML = "Not Available";
   }
@@ -301,9 +305,9 @@ function displayZoomStatus(e) {
 
 function initiateZoomGUI() {
   // make sure elements only get initialized once, and listeners only get attached if zoom_room configured
-  if (!guiInitiated && globals.state?.zoom_room) {
-    // Initiate zoomData object with globals.state (which should be assigned before ui_ready fires)
-    zoomData = globals.state?.zoom_room;
+  if (!guiInitiated && globals.getState()?.zoom_room) {
+    // Initiate zoomData object with globals.getState (which should be assigned before ui_ready fires)
+    zoomData = globals.getState()?.zoom_room;
 
     // Add Zoom Room banners to DOM
     const zoomIconHTML =

@@ -5,7 +5,6 @@
  */
 
 import { updateStatus } from "../orchestrator_request.js";
-import { appendUIInteractionJSON } from "../utilities.js";
 
 function handleDefaultButton(e) {
   // block clicks
@@ -29,7 +28,7 @@ function handleDefaultButton(e) {
     ? btn.getAttribute("data-value")
     : true;
   const payload = btn.getAttribute("data-path").replace(/<value>/, value);
-  updateStatus(appendUIInteractionJSON(payload), reset);
+  updateStatus(payload, reset);
 }
 
 // Export functions

@@ -16,7 +16,7 @@ window.onerror = function (message, source, lineno, colno) {
   // throw error to Slack
   throwClientError(
     `Javascript runtime error: ${message} \nFrom ${source}, line ${lineno} col ${colno}\nLast get_status: ${
-      globals.state ? JSON.stringify(globals.state) : globals.state
+      globals.getState() ? JSON.stringify(globals.getState()) : ""
     }`,
     "84hfn3jd7h4n",
     1,
@@ -26,7 +26,7 @@ window.onerror = function (message, source, lineno, colno) {
 
 async function throwClientError(message, code, severity) {
   // Send the update to the orchestrator
-  const orchestrator = globals.orchestrator;
+  const orchestrator = globals.getOrchestrator();
   const response = await orchestratorRequest(
     `${orchestrator}/api/errors/client`,
     {

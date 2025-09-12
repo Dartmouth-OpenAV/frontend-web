@@ -418,14 +418,14 @@ async function refreshState() {
   // Pause refresh loop
   pauseRefresh();
 
-  if (!globals.orchestrator || !globals.system) {
+  if (!globals.getOrchestrator() || !globals.getSystem()) {
     alert404();
     return null;
   }
 
   // Request state from orchestrator
   const state = await orchestratorRequest(
-    `${globals.orchestrator}/api/systems/${globals.system}/state`,
+    `${globals.getOrchestrator()}/api/systems/${globals.getSystem()}/state`,
   ).then(async (response) => {
     // Do not continue the refresh loop on non-OK responses
     // Add user feedback in case of 404
@@ -459,7 +459,7 @@ async function refreshState() {
     // Set global state and render UI
     // exclude 204s
     if (state !== "WAIT") {
-      globals.state = state;
+      globals.setState(state);
       window.dispatchEvent(new CustomEvent("new_state", { detail: state }));
 
       // If controls have not been rendered yet, render control sets
@@ -535,7 +535,7 @@ function drawUI(config) {
 
   // Tell modules it's safe to attach custom listeners to controls
   window.dispatchEvent(new Event("ui_ready"));
-  globals.uiReady = true; // keeping this construct available as well, for modules that might load asynchronously
+  globals.setUIReady(true); // keeping this construct available as well, for modules that might load asynchronously
 }
 
 /* page load listener */
@@ -544,8 +544,8 @@ window.addEventListener("load", async () => {
   await fetch("/config")
     .then((response) => response.json())
     .then((json) => {
-      globals.homeOrchestrator = json.orchestrator;
-      globals.orchestrator = json.orchestrator;
+      globals.setHomeOrchestrator(json.orchestrator);
+      globals.setOrchestrator(json.orchestrator);
       return json.orchestrator;
     })
     .catch((err) => {
@@ -561,16 +561,16 @@ window.addEventListener("load", async () => {
     if (!/^https?:\/\//i.test(orchestrator)) {
       orchestrator = "http://" + orchestrator;
     }
-    globals.orchestrator = orchestrator;
+    globals.setOrchestrator(orchestrator);
   }
 
   // Set global system from query param
   if (queryParams.has("system")) {
-    globals.system = queryParams.get("system");
+    globals.setSystem(queryParams.get("system"));
   }
 
   // If either orchestrator or system is not set, show error message and stop processing
-  if (!globals.orchestrator || !globals.system) {
+  if (!globals.getOrchestrator() || !globals.getSystem()) {
     return alert404();
   }
 

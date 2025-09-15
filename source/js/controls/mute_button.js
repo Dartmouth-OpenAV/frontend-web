@@ -5,7 +5,6 @@
  */
 import { updateStatus } from "../orchestrator_request.js";
 import { setVolumeSliderState } from "./volume_slider.js";
-import { appendUIInteractionJSON } from "../utilities.js";
 
 function setMuteButtonState(btn, state) {
   // everything is topsy turvy in mute land ...
@@ -65,7 +64,7 @@ function handleMuteButton(e) {
   const path = btn.getAttribute("data-path");
   const payload = path.replace(/<value>/, newValue);
 
-  updateStatus(appendUIInteractionJSON(payload), reset);
+  updateStatus(payload, reset);
 }
 
 // Export functions

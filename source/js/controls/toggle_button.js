@@ -4,7 +4,6 @@
  *
  */
 import { updateStatus } from "../orchestrator_request.js";
-import { appendUIInteractionJSON } from "../utilities.js";
 
 function setButtonState(btn, state, handler) {
   if (state === true && btn.getAttribute("data-override") !== "true") {
@@ -45,7 +44,7 @@ function handleToggleButton(e) {
   // update backend
   const path = btn.getAttribute("data-path");
   const payload = path.replace(/<value>/, newState);
-  updateStatus(appendUIInteractionJSON(payload), reset);
+  updateStatus(payload, reset);
 }
 
 // Export functions

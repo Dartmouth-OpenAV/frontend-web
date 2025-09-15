@@ -7,12 +7,7 @@
 import { updateStatus } from "../orchestrator_request.js";
 import { setButtonState } from "./toggle_button.js";
 import { setPowerState, handleTogglePower } from "./power_button.js";
-import {
-  followPath,
-  mergeJSON,
-  useProgressBar,
-  appendUIInteractionJSON,
-} from "../utilities.js";
+import { followPath, mergeJSON, useProgressBar } from "../utilities.js";
 import {
   handleVideoMute,
   setVideoMuteButtonState,
@@ -190,7 +185,7 @@ function handleDisplaySourceSelect(e) {
     // set new selection state
     setDisplaySourceOptionState(btn, true);
 
-    updateStatus(appendUIInteractionJSON(postData), reset);
+    updateStatus(postData, reset);
   }
 }
 

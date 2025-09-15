@@ -49,7 +49,7 @@ function clearSystemCache() {
   document.getElementById("tech-errors").innerHTML = "";
 
   // send DELETE request to orhcestrator
-  const url = `${globals.orchestrator}/api/systems/${globals.system}/cache`;
+  const url = `${globals.getOrchestrator()}/api/systems/${globals.getSystem()}/cache`;
   const options = {
     method: "delete",
   };
@@ -59,12 +59,12 @@ function clearSystemCache() {
         .getElementById("alert-template")
         .innerHTML.replace(
           /{{message}}/,
-          `ERROR: ${response.status} response from ${globals.orchestrator}/api/systems/${globals.system}/cache`,
+          `ERROR: ${response.status} response from ${globals.getOrchestrator()}/api/systems/${globals.getSystem()}/cache`,
         );
       document
         .getElementById("tech-errors")
         .insertAdjacentHTML("beforeend", alert);
-    };
+    }
 
     // allow refresh loop to resume
     window.dispatchEvent(new Event("update_complete"));

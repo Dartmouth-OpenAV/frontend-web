@@ -7,6 +7,7 @@
  */
 // import { updateStatus } from "./main.js";
 import { updateStatus } from "./orchestrator_request.js";
+import { globals } from "./globals.js";
 
 let countdownTimeoutId;
 
@@ -100,19 +101,10 @@ function bumpMainContentForBanners() {
   }
 }
 
-function appendUIInteractionJSON(baseJSON) {
-  let obj = JSON.parse(baseJSON);
-  obj["environment_sensing"] = {
-    ui_interactions: { occupancy_detected: true },
-  };
-  return JSON.stringify(obj);
-}
-
 function sendUIInteractionUpdate() {
-  const payload = JSON.stringify({
-    environment_sensing: { ui_interactions: { occupancy_detected: true } },
-  });
-  updateStatus(payload, null);
+  if (globals.getState()?.environment_sensing) {
+    updateStatus("{}", null);
+  }
 }
 
 // Export functions
@@ -123,6 +115,5 @@ export {
   countdownTimeoutId,
   useProgressBar,
   bumpMainContentForBanners,
-  appendUIInteractionJSON,
   sendUIInteractionUpdate,
 };

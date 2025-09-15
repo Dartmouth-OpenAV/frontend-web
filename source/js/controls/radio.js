@@ -7,7 +7,6 @@
 
 import { updateStatus } from "../orchestrator_request.js";
 import { setButtonState } from "./toggle_button.js";
-import { appendUIInteractionJSON } from "../utilities.js";
 
 function handleRadioSelect(e) {
   const btn = e.target;
@@ -44,7 +43,7 @@ function handleRadioSelect(e) {
     // update backend
     const path = btn.getAttribute("data-path");
     const payload = path.replace(/<value>/, true);
-    updateStatus(appendUIInteractionJSON(payload), reset);
+    updateStatus(payload, reset);
   }
 }
 

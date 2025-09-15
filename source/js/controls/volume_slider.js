@@ -5,7 +5,6 @@
  */
 
 // import { refresh, availableTimers, updateStatus } from '../main.js';
-import { appendUIInteractionJSON } from "../utilities.js";
 import { updateStatus } from "../orchestrator_request.js";
 
 let handleVolumeOngoing = false;
@@ -68,7 +67,7 @@ function handleVolumeSlider(e) {
     handleVolumeOngoing = true;
     const path = slider.getAttribute("data-path");
     const payload = path.replace(/<value>/, slider.value);
-    updateStatus(appendUIInteractionJSON(payload), function () {
+    updateStatus(payload, function () {
       handleVolumeOngoing = false;
     });
   } else {

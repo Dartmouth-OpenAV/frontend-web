@@ -293,9 +293,9 @@ function selectZoomInput(input) {
 
 function initiateZoomGUI() {
   // make sure elements only get initialized once, and listeners only get attached if zoom_room configured
-  if (globals.state?.zoom_room) {
-    // Initiate zoomData object with globals.state (which should be assigned before ui_ready fires)
-    zoomData = globals.state?.zoom_room;
+  if (globals.getState()?.zoom_room) {
+    // Initiate zoomData object with globals.getState (which should be assigned before ui_ready fires)
+    zoomData = globals.getState()?.zoom_room;
 
     // If Zoom banners not present already, add to DOM
     if (!document.getElementById("zoom-room-notification")) {

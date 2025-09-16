@@ -7,7 +7,7 @@
 import { updateStatus } from "../orchestrator_request.js";
 import { setButtonState } from "./toggle_button.js";
 import { setPowerState, handleTogglePower } from "./power_button.js";
-import { followPath, mergeJSON, useProgressBar } from "../utilities.js";
+import { followPath, mergeJSON, useProgressBar, dispatchStateChangeEvents } from "../utilities.js";
 import {
   handleVideoMute,
   setVideoMuteButtonState,
@@ -38,11 +38,15 @@ function setDisplaySourceOptionState(btn, state) {
     }
   }
 
-  // finally, set button state
+  // Set button state
   setButtonState(btn, state, handleDisplaySourceSelect);
+
+  // Alert modules with dependencies on this button's state
+  dispatchStateChangeEvents(btn);
 }
 
 function handleDisplaySourceSelect(e) {
+  console.log("handleDisplaySourceSelect");
   const btn = e.target;
   const container = btn.parentElement;
   const channel = container.getAttribute("data-channel");
@@ -54,7 +58,11 @@ function handleDisplaySourceSelect(e) {
     : false;
 
   // only switch input if the tapped input is not already selected
-  if (!btn.classList.contains("active")) {
+  // if (!btn.classList.contains("active")) {
+  if (
+    btn.getAttribute("data-value") !== "true" ||
+    btn.getAttribute("data-override") === "true"
+  ) {
     let powerActionInitiated = false;
     let pauseActionInitiated = false;
 

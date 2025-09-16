@@ -1,7 +1,7 @@
 /* Global variables */
 import { globals } from "../../js/globals.js";
 import { updateStatus } from "../../js/orchestrator_request.js";
-import { bumpMainContentForBanners } from "../../js/utilities.js";
+import { bumpMainContentForBanners, registerStateChangeEvent } from "../../js/utilities.js";
 import { attachSharedModalListeners, openModal } from "../../js/modals.js";
 import banners from "./components/zoom_banners.html";
 import joinManualModal from "./components/join_manual_modal.html";
@@ -174,6 +174,38 @@ function openZoomPrompt() {
   }
 }
 
+// Check for other Zoom inputs (eg. a Share Screen button) and set data-override
+// to true so they will not display as active
+function selectZoomInput(input) {
+  // check if there is another Zoom input in the same radio
+  const radioGroup = input.parentElement;
+  const zoomOpts = radioGroup.querySelectorAll("[data-zoom-meeting-prompt], [data-zoom-share-prompt]");
+  // if (radioGroup.querySelectorAll("[data-zoom-meeting-prompt], [data-zoom-share-prompt]").length > 1) {
+  if (zoomOpts.length > 1) {
+    // De-select all Zoom inputs
+    radioGroup
+      .querySelectorAll("[data-zoom-meeting-prompt], [data-zoom-share-prompt]")
+      .forEach((opt) => {
+        // elem.setAttribute("data-override", "true");
+        // opt.setAttribute("data-value", "false");
+        opt.setAttribute("data-override", "true");
+        opt.classList.remove("active");
+        opt.removeAttribute("data-zoom-last-selected");
+      });
+
+    // Re-select the requested input
+    // input.setAttribute("data-override", "false");
+
+
+    // input.setAttribute("data-value", "true");
+    input.setAttribute("data-override", "false");
+    input.setAttribute("data-zoom-last-selected", "");
+    if (input.getAttribute("data-override") !== "true") {
+      input.classList.add("active");
+    }
+  }
+}
+
 function displayZoomStatus(e) {
   zoomData = e.detail.zoom_room;
 
@@ -190,6 +222,13 @@ function displayZoomStatus(e) {
     leaveBtn.removeEventListener("touchstart", openLeaveZoomPrompt);
     leaveBtn.classList.add("hidden");
   }
+
+  // Highlight correct Zoom inputs
+  document
+    .querySelectorAll("[data-zoom-last-selected][data-value=true][data-override=false]")
+    .forEach((input) => {
+      selectZoomInput(input);
+    });
 
   // Update banner
   const meetingStatus = zoomData.meeting?.status
@@ -276,21 +315,6 @@ function displayZoomStatus(e) {
   // Check for camera and audio mute warnings
 }
 
-// Check for other Zoom inputs (eg. a Share Screen button) and set data-override
-// to true so they will not display as active
-function selectZoomInput(input) {
-  console.log("selectZoomInput", input);
-  // De-select all Zoom inputs
-  document
-    .querySelectorAll("[data-zoom-meeting-prompt],[data-zoom-share-prompt]")
-    .forEach((elem) => {
-      elem.setAttribute("data-override", "true");
-    });
-
-  // Re-select the requested input
-  input.setAttribute("data-override", "false");
-}
-
 function initiateZoomGUI() {
   // make sure elements only get initialized once, and listeners only get attached if zoom_room configured
   if (globals.getState()?.zoom_room) {
@@ -358,6 +382,26 @@ function initiateZoomGUI() {
       });
     });
 
+    // Select one Zoom input in radios with multiple Zoom inputs selected at boot
+    document.querySelectorAll(".display-source-radio").forEach((radioGroup) => {
+      const zoomOpts = radioGroup.querySelectorAll(
+        "[data-zoom-meeting-prompt], [data-zoom-share-prompt]",
+      );
+      if (
+        zoomOpts.length > 1 &&
+        zoomOpts[0].getAttribute("data-value") === "true"
+      ) {
+        selectZoomInput(zoomOpts[0]);
+      }
+    });
+
+    // Add to state change callbacks list for Zoom inputs
+    document
+      .querySelectorAll("[data-zoom-meeting-prompt], [data-zoom-share-prompt]")
+      .forEach((input) => {
+        registerStateChangeEvent("zoom_input_updated", input);
+      });
+
     // Attach static listeners to inputs in custom Zoom modals, eg. Cancel/Back dismiss buttons
     attachSharedModalListeners();
 
@@ -409,6 +453,15 @@ function initiateZoomGUI() {
 
     // Start listening for state changes from main
     window.addEventListener("new_state", displayZoomStatus);
+
+    // Listen for Zoom input updates (which don't necessarily come from refreshState)
+    window.addEventListener("zoom_input_updated", () => {
+      document
+        .querySelectorAll("[data-zoom-last-selected][data-value=true][data-override=false]")
+        .forEach((input) => {
+          selectZoomInput(input);
+        });
+    });
   }
 }
 

@@ -102,8 +102,34 @@ function bumpMainContentForBanners() {
 }
 
 function sendUIInteractionUpdate() {
+  console.log("sendUIInteraction update triggered");
   if (globals.getState()?.environment_sensing) {
     updateStatus("{}", null);
+  }
+}
+
+function registerStateChangeEvent(eventName, input) {
+  const stateChangeEvents = input.getAttribute("data-change-events")
+    ? JSON.parse(input.getAttribute("data-change-events"))
+    : [];
+
+  if (!stateChangeEvents.includes(eventName)) {
+    stateChangeEvents.push(eventName);
+  }
+
+  input.setAttribute("data-change-events", JSON.stringify(stateChangeEvents));
+}
+
+function dispatchStateChangeEvents(input) {
+  if (input.getAttribute("data-change-events")) {
+    try {
+      const changeEvents = JSON.parse(input.getAttribute("data-change-events"));
+      for (let event of changeEvents) {
+        window.dispatchEvent(new CustomEvent(event, { detail: input }));
+      }
+    } catch (err) {
+      console.error("Error parsing data-change-events", err);
+    }
   }
 }
 
@@ -116,4 +142,6 @@ export {
   useProgressBar,
   bumpMainContentForBanners,
   sendUIInteractionUpdate,
+  registerStateChangeEvent,
+  dispatchStateChangeEvents,
 };

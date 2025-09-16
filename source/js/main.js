@@ -407,6 +407,9 @@ function updateAllControls(statusData) {
       }
     }
   });
+
+  // Signal to subscribed modules that new state/ui is ready
+  window.dispatchEvent(new CustomEvent("new_state", { detail: statusData }));
 }
 
 function pauseRefresh() {
@@ -460,7 +463,7 @@ async function refreshState() {
     // exclude 204s
     if (state !== "WAIT") {
       globals.setState(state);
-      window.dispatchEvent(new CustomEvent("new_state", { detail: state }));
+      // window.dispatchEvent(new CustomEvent("new_state", { detail: state }));
 
       // If controls have not been rendered yet, render control sets
       // TO DO: check for when controls are added/removed instead of checking for any controls

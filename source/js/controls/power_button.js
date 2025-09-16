@@ -22,6 +22,7 @@ import {
 const shutdownWarningTime = 60; // seconds
 
 function setPowerState(powerBtn, state) {
+  // console.log("setPowerState called");
   setButtonState(powerBtn, state, handleTogglePower);
 
   // update dependent buttons
@@ -153,6 +154,7 @@ function handleTogglePower(e) {
   }
 
   function reset(response) {
+    setPowerState(btn, response);
     cleanupConfirmationModal();
 
     // check for timeout before re-allowing events
@@ -203,31 +205,10 @@ function handleTogglePower(e) {
         document
           .querySelectorAll(`.display-source-radio[data-channel="${channel}"]`)
           .forEach((radio) => {
-            let defaultInput = radio.getAttribute("data-default-option");
+            const selectedInput = radio.querySelector("[data-value=true]")
+              ? radio.querySelector("[data-value=true]")
+              : radio.querySelector(".radio-option");
 
-            // check for special value "last_selected". Note: Some displays/switchers do not maintain input state
-            // while power is off, so this feature is not universaly supported
-            if (defaultInput === "last_selected") {
-              defaultInput = radio.querySelector("[data-value=true]")
-                ? radio
-                    .querySelector("[data-value=true]")
-                    .getAttribute("data-option")
-                : false;
-            }
-
-            // no default input found, default to first .radio-option
-            if (
-              !defaultInput ||
-              !radio.querySelector(`[data-option=${defaultInput}]`)
-            ) {
-              defaultInput = radio
-                .querySelector(".radio-option")
-                .getAttribute("data-option");
-            }
-
-            const selectedInput = radio.querySelector(
-              `[data-option=${defaultInput}]`,
-            );
             // make sure data-value gets set for setPowerState to read
             selectedInput.setAttribute("data-value", true);
 
@@ -254,6 +235,11 @@ function handleTogglePower(e) {
             JSON.parse(extraData),
           );
           postData = JSON.stringify(mergedJSON);
+        });
+
+        linkedInputs.forEach((input) => {
+          // input.setAttribute("data-override", true);
+          setDisplaySourceOptionState(input, false);
         });
       }
     }

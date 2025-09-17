@@ -180,25 +180,17 @@ function selectZoomInput(input) {
   // check if there is another Zoom input in the same radio
   const radioGroup = input.parentElement;
   const zoomOpts = radioGroup.querySelectorAll("[data-zoom-meeting-prompt], [data-zoom-share-prompt]");
-  // if (radioGroup.querySelectorAll("[data-zoom-meeting-prompt], [data-zoom-share-prompt]").length > 1) {
   if (zoomOpts.length > 1) {
     // De-select all Zoom inputs
     radioGroup
       .querySelectorAll("[data-zoom-meeting-prompt], [data-zoom-share-prompt]")
       .forEach((opt) => {
-        // elem.setAttribute("data-override", "true");
-        // opt.setAttribute("data-value", "false");
-        opt.setAttribute("data-override", "true");
+        opt.setAttribute("data-override", true);
         opt.classList.remove("active");
         opt.removeAttribute("data-zoom-last-selected");
       });
 
-    // Re-select the requested input
-    // input.setAttribute("data-override", "false");
-
-
-    // input.setAttribute("data-value", "true");
-    input.setAttribute("data-override", "false");
+    input.setAttribute("data-override", false);
     input.setAttribute("data-zoom-last-selected", "");
     if (input.getAttribute("data-override") !== "true") {
       input.classList.add("active");
@@ -315,6 +307,18 @@ function displayZoomStatus(e) {
   // Check for camera and audio mute warnings
 }
 
+function handleZoomMeetingPromptClick(event) {
+  openZoomPrompt();
+  console.log("currentTarget", event.currentTarget);
+  selectZoomInput(event.currentTarget);
+}
+
+function handleZoomSharePromptClick(event) {
+  openModal(null, "share-screen-zoom-prompt");
+  console.log("currentTarget", event.currentTarget);
+  selectZoomInput(event.currentTarget);
+}
+
 function initiateZoomGUI() {
   // make sure elements only get initialized once, and listeners only get attached if zoom_room configured
   if (globals.getState()?.zoom_room) {
@@ -367,19 +371,12 @@ function initiateZoomGUI() {
 
     // Attach listeners to all controls tagged data-zoom-meeting-prompt
     document.querySelectorAll("[data-zoom-meeting-prompt]").forEach((input) => {
-      // input.addEventListener("click", openZoomPrompt);
-      input.addEventListener("click", () => {
-        openZoomPrompt();
-        selectZoomInput(input);
-      });
+      input.addEventListener("click", handleZoomMeetingPromptClick);
     });
 
     // Attach listeners to all controls tagged data-zoom-sharing-prompt
     document.querySelectorAll("[data-zoom-share-prompt]").forEach((input) => {
-      input.addEventListener("click", () => {
-        openModal(null, "share-screen-zoom-prompt");
-        selectZoomInput(input);
-      });
+      input.addEventListener("click", handleZoomSharePromptClick);
     });
 
     // Select one Zoom input in radios with multiple Zoom inputs selected at boot

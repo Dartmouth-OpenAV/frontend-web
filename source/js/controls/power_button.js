@@ -6,7 +6,7 @@
 
 import { updateStatus } from "../orchestrator_request.js";
 import { setButtonState } from "./toggle_button.js";
-import { handleVideoMute } from "./video_mute_button.js";
+import { setVideoMuteButtonState, handleVideoMute } from "./video_mute_button.js";
 import {
   setDisplaySourceOptionState,
   handleDisplaySourceSelect,
@@ -17,12 +17,13 @@ import {
   countdown,
   countdownTimeoutId,
   useProgressBar,
+  disableControl,
+  enableControl,
 } from "../utilities.js";
 
 const shutdownWarningTime = 60; // seconds
 
 function setPowerState(powerBtn, state) {
-  // console.log("setPowerState called");
   setButtonState(powerBtn, state, handleTogglePower);
 
   // update dependent buttons
@@ -38,6 +39,11 @@ function setPowerState(powerBtn, state) {
       } else {
         pauseBtn.classList.add("invisible");
       }
+
+      // also re-evaluate state
+      const currentState =
+        pauseBtn.getAttribute("data-value") === "true" ? true : false;
+      setVideoMuteButtonState(pauseBtn, currentState);
     });
 
     // ask linkedInputs to re-evaluate themselves
@@ -101,23 +107,17 @@ function handleTogglePower(e) {
   }
 
   function dettachClickListeners() {
-    // block clicks on power button
-    btn.removeEventListener("click", handleTogglePower);
-    btn.removeEventListener("touchstart", handleTogglePower);
-    btn.removeAttribute("data-allow-events");
+    // block power button
+    disableControl(btn, handleTogglePower);
 
     // block linked inputs and pause listeners
     if (channel) {
       linkedPauseButtons.forEach((pauseBtn) => {
-        pauseBtn.removeEventListener("click", handleVideoMute);
-        pauseBtn.removeEventListener("touchstart", handleVideoMute);
-        pauseBtn.removeAttribute("data-allow-events");
+        disableControl(pauseBtn, handleVideoMute);
       });
 
       linkedInputs.forEach((input) => {
-        input.removeEventListener("click", handleDisplaySourceSelect);
-        input.removeEventListener("touchstart", handleDisplaySourceSelect);
-        input.removeAttribute("data-allow-events");
+        disableControl(input, handleDisplaySourceSelect);
       });
     }
 
@@ -130,31 +130,20 @@ function handleTogglePower(e) {
       .removeEventListener("touchstart", sendPowerUpdate);
   }
 
-  function reattachPowerListener() {
-    btn.setAttribute("data-allow-events", "");
-    btn.addEventListener("click", handleTogglePower);
-    btn.addEventListener("touchstart", handleTogglePower);
-  }
-
   function reattachLinkedListeners() {
     // reattach linked input and pause listeners
     if (channel) {
       linkedPauseButtons.forEach((pauseBtn) => {
-        pauseBtn.addEventListener("click", handleVideoMute);
-        pauseBtn.addEventListener("touchstart", handleVideoMute);
-        pauseBtn.setAttribute("data-allow-events", "");
+        enableControl(pauseBtn, handleVideoMute);
       });
 
       linkedInputs.forEach((input) => {
-        input.addEventListener("click", handleDisplaySourceSelect);
-        input.addEventListener("touchstart", handleDisplaySourceSelect);
-        input.setAttribute("data-allow-events", "");
+        enableControl(input, handleDisplaySourceSelect);
       });
     }
   }
 
   function reset(response) {
-    setPowerState(btn, response);
     cleanupConfirmationModal();
 
     // check for timeout before re-allowing events
@@ -175,12 +164,15 @@ function handleTogglePower(e) {
       let timerCallback;
       if (newState === true) {
         reattachLinkedListeners();
-        timerCallback = reattachPowerListener;
+        // timerCallback = reattachPowerListener;
+        timerCallback = () => {
+          enableControl(btn, handleTogglePower);
+        };
       }
-      // on power off, block linked listeners until timout
+      // on power off, block linked listeners until timeout
       else {
         timerCallback = () => {
-          reattachPowerListener();
+          enableControl(btn, handleTogglePower);
           reattachLinkedListeners();
         };
       }
@@ -189,7 +181,7 @@ function handleTogglePower(e) {
     }
     // no progress bar (or update failed)
     else {
-      reattachPowerListener();
+      enableControl(btn, handleTogglePower);
       reattachLinkedListeners();
     }
   }
@@ -235,6 +227,8 @@ function handleTogglePower(e) {
             JSON.parse(extraData),
           );
           postData = JSON.stringify(mergedJSON);
+
+          setVideoMuteButtonState(pauseBtn, false);
         });
 
         linkedInputs.forEach((input) => {

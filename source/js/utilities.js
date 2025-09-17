@@ -102,10 +102,23 @@ function bumpMainContentForBanners() {
 }
 
 function sendUIInteractionUpdate() {
-  console.log("sendUIInteraction update triggered");
   if (globals.getState()?.environment_sensing) {
     updateStatus("{}", null);
   }
+}
+
+function disableControl(control, listener) {
+  control.removeEventListener("click", listener);
+  control.removeEventListener("touchstart", listener);
+  control.removeAttribute("data-allow-events");
+  control.classList.add("no-pointer-events");
+}
+
+function enableControl(control, listener) {
+  control.addEventListener("click", listener);
+  control.addEventListener("touchstart", listener);
+  control.setAttribute("data-allow-events", "");
+  control.classList.remove("no-pointer-events");
 }
 
 function registerStateChangeEvent(eventName, input) {
@@ -142,6 +155,8 @@ export {
   useProgressBar,
   bumpMainContentForBanners,
   sendUIInteractionUpdate,
+  disableControl,
+  enableControl,
   registerStateChangeEvent,
   dispatchStateChangeEvents,
 };

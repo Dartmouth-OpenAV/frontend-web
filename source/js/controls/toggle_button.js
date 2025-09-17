@@ -4,6 +4,7 @@
  *
  */
 import { updateStatus } from "../orchestrator_request.js";
+import { disableControl, enableControl } from "../utilities.js";
 
 function setButtonState(btn, state, handler) {
   if (state === true && btn.getAttribute("data-override") !== "true") {
@@ -23,22 +24,16 @@ function setButtonState(btn, state, handler) {
 }
 
 function handleToggleButton(e) {
-  // block clicks
-  var btn = e.target;
-  btn.removeEventListener("click", handleToggleButton);
-  btn.removeEventListener("touchstart", handleToggleButton);
-  btn.removeAttribute("data-allow-events");
+  const btn = e.target;
 
-  // visual feedback
+  // block clicks and show visual feedback
+  disableControl(btn, handleToggleButton);
   const newState = btn.getAttribute("data-value") === "true" ? false : true;
   setButtonState(btn, newState, handleToggleButton);
 
   // callback for updateStatus
   function reset() {
-    // reattach listeners
-    btn.addEventListener("click", handleToggleButton);
-    btn.addEventListener("touchstart", handleToggleButton);
-    btn.setAttribute("data-allow-events", "");
+    enableControl(btn, handleToggleButton);
   }
 
   // update backend

@@ -5,6 +5,7 @@
  */
 
 import { updateStatus } from "../orchestrator_request.js";
+import { disableControl, enableControl } from "../utilities.js";
 import { setDisplaySourceOptionState } from "./display_source_radio.js";
 
 function setVideoMuteButtonState(btn, state) {
@@ -45,27 +46,20 @@ function setVideoMuteButtonState(btn, state) {
 
 function handleVideoMute(e) {
   const btn = e.target;
+
+  // block clicks and show visual feedback
+  disableControl(btn, handleVideoMute);
   const newState = btn.getAttribute("data-value") === "true" ? false : true;
-  const path = btn.getAttribute("data-path");
-  const payload = path.replace(/<value>/, newState);
-
-  // block clicks
-  btn.removeEventListener("click", handleVideoMute);
-  btn.removeEventListener("touchstart", handleVideoMute);
-  btn.removeAttribute("data-allow-events");
-
-  // visual feedback
   setVideoMuteButtonState(btn, newState);
 
-  // callback from updateStatus
+  // callback for updateStatus
   function reset() {
-    // reattach listeners
-    btn.addEventListener("click", handleVideoMute);
-    btn.addEventListener("touchstart", handleVideoMute);
-    btn.setAttribute("data-allow-events", "");
+    enableControl(btn, handleVideoMute);
   }
 
   // update backend
+  const path = btn.getAttribute("data-path");
+  const payload = path.replace(/<value>/, newState);
   updateStatus(payload, reset);
 }
 

@@ -6,6 +6,7 @@
  */
 
 import { updateStatus } from "../orchestrator_request.js";
+import { disableControl, enableControl } from "../utilities.js";
 import { setButtonState } from "./toggle_button.js";
 
 function handleRadioSelect(e) {
@@ -16,19 +17,21 @@ function handleRadioSelect(e) {
   function reset() {
     // reattach listeners
     container.querySelectorAll(".radio-option").forEach((option) => {
-      option.addEventListener("click", handleRadioSelect);
-      option.addEventListener("touchstart", handleRadioSelect);
-      option.setAttribute("data-allow-events", "");
+      // option.addEventListener("click", handleRadioSelect);
+      // option.addEventListener("touchstart", handleRadioSelect);
+      // option.setAttribute("data-allow-events", "");
+      enableControl(option, handleRadioSelect);
     });
   }
 
   // only switch selection if the tapped option is not already selected
-  if (!btn.classList.contains("active")) {
+  if (
+    btn.getAttribute("data-value") !== "true" ||
+    btn.getAttribute("data-override") === "true"
+  ) {
     // block clicks on all options in the select
     container.querySelectorAll(".radio-option").forEach(function (option) {
-      option.removeEventListener("click", handleRadioSelect);
-      option.removeEventListener("touchstart", handleRadioSelect);
-      option.removeAttribute("data-allow-events");
+      disableControl(option, handleRadioSelect);
     });
 
     // visual feedback

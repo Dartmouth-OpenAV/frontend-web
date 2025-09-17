@@ -1202,7 +1202,7 @@ h1#room-name {
 
 
 /* Keep at end of compiled css */
-.no-poiner-events {
+.no-pointer-events {
   pointer-events: none;
 }
 

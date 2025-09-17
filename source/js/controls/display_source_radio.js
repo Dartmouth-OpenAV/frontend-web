@@ -7,7 +7,14 @@
 import { updateStatus } from "../orchestrator_request.js";
 import { setButtonState } from "./toggle_button.js";
 import { setPowerState, handleTogglePower } from "./power_button.js";
-import { followPath, mergeJSON, useProgressBar, dispatchStateChangeEvents } from "../utilities.js";
+import {
+  followPath,
+  mergeJSON,
+  useProgressBar,
+  dispatchStateChangeEvents,
+  disableControl,
+  enableControl,
+} from "../utilities.js";
 import {
   handleVideoMute,
   setVideoMuteButtonState,
@@ -46,7 +53,6 @@ function setDisplaySourceOptionState(btn, state) {
 }
 
 function handleDisplaySourceSelect(e) {
-  console.log("handleDisplaySourceSelect");
   const btn = e.target;
   const container = btn.parentElement;
   const channel = container.getAttribute("data-channel");
@@ -57,8 +63,7 @@ function handleDisplaySourceSelect(e) {
     ? document.querySelectorAll(`.pause-button[data-channel="${channel}"]`)
     : false;
 
-  // only switch input if the tapped input is not already selected
-  // if (!btn.classList.contains("active")) {
+  // Only switch input if the tapped input is not already selected
   if (
     btn.getAttribute("data-value") !== "true" ||
     btn.getAttribute("data-override") === "true"
@@ -66,28 +71,22 @@ function handleDisplaySourceSelect(e) {
     let powerActionInitiated = false;
     let pauseActionInitiated = false;
 
-    // block clicks on all options in the select
+    // Block clicks on all options in the select
     container.querySelectorAll(".radio-option").forEach(function (input) {
-      input.removeEventListener("click", handleDisplaySourceSelect);
-      input.removeEventListener("touchstart", handleDisplaySourceSelect);
-      input.removeAttribute("data-allow-events");
+      disableControl(input, handleDisplaySourceSelect);
     });
 
-    // callback for updateStatus
+    // Callback for updateStatus
     function reset(response) {
-      // re-attach click listeners on radio options
+      // re-attach click listeners on all radio options
       container.querySelectorAll(".radio-option").forEach((input) => {
-        input.addEventListener("click", handleDisplaySourceSelect);
-        input.addEventListener("touchstart", handleDisplaySourceSelect);
-        input.setAttribute("data-allow-events", "");
+        enableControl(input, handleDisplaySourceSelect);
       });
 
       // re-attach click listeners on any linked video_mute buttons
       if (pauseActionInitiated) {
         linkedPauseButtons.forEach((btn) => {
-          btn.addEventListener("click", handleVideoMute);
-          btn.addEventListener("touchstart", handleVideoMute);
-          btn.setAttribute("data-allow-events", "");
+          enableControl(btn, handleVideoMute);
         });
       }
 
@@ -111,23 +110,19 @@ function handleDisplaySourceSelect(e) {
             const progress =
               btn.parentElement.parentElement.querySelector(".progress");
 
-            useProgressBar(progress, progressDuration, "warming", function () {
-              btn.addEventListener("click", handleTogglePower);
-              btn.addEventListener("touchstart", handleTogglePower);
-              btn.setAttribute("data-allow-events", "");
+            useProgressBar(progress, progressDuration, "warming", () => {
+              enableControl(btn, handleTogglePower);
             });
 
             // if power on failed or there's no progress bar, re-attach listeners immediately
           } else {
-            btn.addEventListener("click", handleTogglePower);
-            btn.addEventListener("touchstart", handleTogglePower);
-            btn.setAttribute("data-allow-events", "");
+            enableControl(btn, handleTogglePower);
           }
         });
       }
     }
 
-    // start building payload
+    // Start building payload
     const path = btn.getAttribute("data-path");
     let postData = path.replace(/<value>/, true);
 
@@ -149,10 +144,7 @@ function handleDisplaySourceSelect(e) {
           postData = JSON.stringify(mergedJSON);
 
           // block power clicks & show visual feedback on the button
-          powerBtn.removeEventListener("click", handleTogglePower);
-          powerBtn.removeEventListener("touchstart", handleTogglePower);
-          powerBtn.removeAttribute("data-allow-events");
-          console.log("Setting linkePowerButton to true");
+          disableControl(powerBtn, handleTogglePower);
           setPowerState(powerBtn, true);
 
           powerActionInitiated = true;
@@ -172,9 +164,7 @@ function handleDisplaySourceSelect(e) {
           postData = JSON.stringify(mergedJSON);
 
           // block pause clicks & show visual feedback:
-          pauseBtn.removeEventListener("click", handleVideoMute);
-          pauseBtn.removeEventListener("touchstart", handleVideoMute);
-          pauseBtn.removeAttribute("data-allow-events");
+          disableControl(pauseBtn, handleVideoMute);
           setVideoMuteButtonState(pauseBtn, false);
 
           pauseActionInitiated = true;

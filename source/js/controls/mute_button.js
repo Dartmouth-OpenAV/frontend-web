@@ -4,6 +4,7 @@
  *
  */
 import { updateStatus } from "../orchestrator_request.js";
+import { disableControl, enableControl } from "../utilities.js";
 import { setVolumeSliderState } from "./volume_slider.js";
 
 function setMuteButtonState(btn, state) {
@@ -42,28 +43,21 @@ function setMuteButtonState(btn, state) {
 }
 
 function handleMuteButton(e) {
-  // block clicks
-  var btn = e.target;
-  btn.removeEventListener("click", handleMuteButton);
-  btn.removeEventListener("touchstart", handleMuteButton);
-  btn.removeAttribute("data-allow-events");
+  const btn = e.target;
 
-  // visual feedback
+  // block clicks and show visual feedback
+  disableControl(btn, handleMuteButton);
   const newValue = btn.getAttribute("data-value") === "true" ? false : true;
   setMuteButtonState(btn, newValue);
 
   // callback for updateStatus
   function reset() {
-    // reattach listeners
-    btn.setAttribute("data-allow-events", "");
-    btn.addEventListener("click", handleMuteButton);
-    btn.addEventListener("touchstart", handleMuteButton);
+    enableControl(btn, handleMuteButton);
   }
 
   // update backend
   const path = btn.getAttribute("data-path");
   const payload = path.replace(/<value>/, newValue);
-
   updateStatus(payload, reset);
 }
 

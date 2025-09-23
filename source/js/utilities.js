@@ -121,24 +121,77 @@ function enableControl(control, listener) {
   control.classList.remove("no-pointer-events");
 }
 
-function registerStateChangeEvent(eventName, input) {
-  const stateChangeEvents = input.getAttribute("data-change-events")
-    ? JSON.parse(input.getAttribute("data-change-events"))
-    : [];
+/*
+ * When triggerInput state is updated, dispatch event on subscribers
+ * eventName - string
+ * triggerInput - DOM element
+ * subscribers - array of ID strings
+ * callback - function to be called by subscribers when eventName is emitted on them
+ */
+function registerStateChangeEvent(
+  eventName,
+  triggerInput,
+  subscribers,
+  callback,
+) {
+  // Get subscriberIds
+  const subscriberIds = subscribers.map((sub) => {
+    if (sub.id) {
+      return sub.id;
+    }
 
-  if (!stateChangeEvents.includes(eventName)) {
-    stateChangeEvents.push(eventName);
+    const id = crypto.randomUUID();
+    sub.id = id;
+    return id;
+  });
+
+  // Check if triggerInput already emits this event
+  let stateChangeEvents = triggerInput.getAttribute("data-change-events")
+    ? JSON.parse(triggerInput.getAttribute("data-change-events"))
+    : {};
+
+  // If the event has already been registered on the triggerInput, add subscribers to the existing list
+  if (eventName in stateChangeEvents) {
+    let currSubscribers = stateChangeEvents[eventName];
+
+    for (const id of subscriberIds) {
+      if (!currSubscribers.includes(id)) {
+        stateChangeEvents[eventName] = stateChangeEvents[eventName].push(id);
+      }
+    }
+  }
+  // else, initialize this event with this subscriber list
+  else {
+    stateChangeEvents[eventName] = subscriberIds;
   }
 
-  input.setAttribute("data-change-events", JSON.stringify(stateChangeEvents));
+  // Update data-change-events on triggerInput
+  triggerInput.setAttribute(
+    "data-change-events",
+    JSON.stringify(stateChangeEvents),
+  );
+
+  // Add a listener on each subscriber that calls the callback
+  subscribers.forEach((sub) => {
+    sub.addEventListener(eventName, callback);
+  });
 }
 
+/*
+ * To be used by control state setter functions to emit registered state change events
+ * data-change-events format: { event1: [subscriber1ID, subscriber2ID], event2: [subscriber1ID, subscriber2ID]}
+ * eg. "{"zoom_input_updated":["dd90e82b-46bd-49f3-9b87-ad0ea311048f"]}"
+ */
 function dispatchStateChangeEvents(input) {
   if (input.getAttribute("data-change-events")) {
     try {
       const changeEvents = JSON.parse(input.getAttribute("data-change-events"));
-      for (let event of changeEvents) {
-        window.dispatchEvent(new CustomEvent(event, { detail: input }));
+
+      for (const [eventName, subscribers] of Object.entries(changeEvents)) {
+        for (const id of subscribers) {
+          const sub = document.getElementById(id);
+          sub.dispatchEvent(new CustomEvent(eventName, { detail: input }));
+        }
       }
     } catch (err) {
       console.error("Error parsing data-change-events", err);

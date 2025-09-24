@@ -156,7 +156,7 @@ function registerStateChangeEvent(
 
     for (const id of subscriberIds) {
       if (!currSubscribers.includes(id)) {
-        stateChangeEvents[eventName] = stateChangeEvents[eventName].push(id);
+        stateChangeEvents[eventName].push(id);
       }
     }
   }

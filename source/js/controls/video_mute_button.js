@@ -10,10 +10,9 @@ import {
   enableControl,
   dispatchStateChangeEvents,
 } from "../utilities.js";
-import { setDisplaySourceOptionState } from "./display_source_radio.js";
 
 function setVideoMuteButtonState(btn, state) {
-  // when video is muted, color the button, show the slash, and change text to
+  // When video is muted, color the button, show the slash, and change text to
   if (state === true) {
     btn.classList.add("active");
     btn.querySelector(".slash").classList.remove("hidden");
@@ -33,18 +32,19 @@ function setVideoMuteButtonState(btn, state) {
     btn.addEventListener("touchstart", handleVideoMute);
   }
 
-  // ask linkedInputs to re-evaluate themselves
+  // check for state override from linked power button
   const channel = btn.getAttribute("data-channel");
-  if (channel) {
-    document
-      .querySelectorAll(
-        `.display-source-radio[data-channel='${channel}'] .radio-option`,
-      )
-      .forEach((input) => {
-        const currentState =
-          input.getAttribute("data-value") === "true" ? true : false;
-        setDisplaySourceOptionState(input, currentState);
-      });
+  const linkedPower = channel
+    ? document.querySelector(`.power-button[data-channel=${channel}]`)
+    : false;
+  if (linkedPower) {
+    const powerOn =
+      linkedPower.getAttribute("data-value") === "true" ? true : false;
+    if (powerOn) {
+      btn.classList.remove("invisible");
+    } else {
+      btn.classList.add("invisible");
+    }
   }
 
   // Alert modules with dependencies on this control's state

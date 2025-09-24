@@ -4,8 +4,11 @@
  *
  */
 import { updateStatus } from "../orchestrator_request.js";
-import { disableControl, enableControl } from "../utilities.js";
-import { setVolumeSliderState } from "./volume_slider.js";
+import {
+  disableControl,
+  enableControl,
+  dispatchStateChangeEvents,
+} from "../utilities.js";
 
 function setMuteButtonState(btn, state) {
   // everything is topsy turvy in mute land ...
@@ -29,17 +32,8 @@ function setMuteButtonState(btn, state) {
     btn.addEventListener("touchstart", handleMuteButton);
   }
 
-  // look for linked volume sliders and tell them to update their state
-  if (btn.getAttribute("data-channel")) {
-    document
-      .querySelectorAll(
-        `.slider[data-channel="${btn.getAttribute("data-channel")}"]`,
-      )
-      .forEach((slider) => {
-        slider.setAttribute("data-muted", state);
-        setVolumeSliderState(slider, slider.value);
-      });
-  }
+  // Alert modules with dependencies on this control's state
+  dispatchStateChangeEvents(btn);
 }
 
 function handleMuteButton(e) {

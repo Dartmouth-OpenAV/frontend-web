@@ -35,6 +35,16 @@ const availableTimers = [
 ];
 
 function setVolumeSliderState(slider, level) {
+  // check for linked mute state
+  const channel = slider.getAttribute("data-channel"); 
+  const linkedMute = document.querySelector(`.mute[data-channel=${channel}]`);
+  if (linkedMute) {
+    const muted =
+      linkedMute.getAttribute("data-value") === "true" ? true : false;
+    slider.setAttribute("data-muted", muted);
+  }
+
+  // set state for slider
   const color =
     slider.getAttribute("data-muted") === "true"
       ? "var(--slider-muted)"

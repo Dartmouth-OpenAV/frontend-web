@@ -2,7 +2,11 @@
 import { globals } from "./globals.js";
 import { orchestratorRequest } from "./orchestrator_request.js";
 import { openModal, setupModals } from "./modals.js";
-import { followPath, bumpMainContentForBanners } from "./utilities.js";
+import {
+  followPath,
+  bumpMainContentForBanners,
+  registerStateChangeEvent,
+} from "./utilities.js";
 import {
   handlePanTiltZoom,
   handlePanTiltZoomStop,
@@ -10,7 +14,7 @@ import {
 import { handleDefaultButton } from "./controls/default_button.js";
 import { setDisplaySourceOptionState } from "./controls/display_source_radio.js";
 import { setMuteButtonState } from "./controls/mute_button.js";
-import { setPowerState } from "./controls/power_button.js";
+import { handleTogglePower } from "./controls/power_button.js";
 import { handleRadioSelect } from "./controls/radio.js";
 import {
   setButtonState,
@@ -382,7 +386,7 @@ function updateAllControls(statusData) {
       }
       // power
       if (type === "power") {
-        setPowerState(control, value);
+        setButtonState(control, value, handleTogglePower);
       }
       // video mute
       if (type === "video_mute") {
@@ -502,6 +506,97 @@ async function refreshState() {
   }
 }
 
+/*
+ * Add default state change events/listeners to linked power, display source, and video mute controls;
+ * also default links between audio mute and volume controls
+ */
+function setupControlLinks() {
+  // Power buttons: Update linked inputs and linked video mutes on state change 
+  document.querySelectorAll(".power-button").forEach((powerBtn) => {
+    const channel = powerBtn.getAttribute("data-channel");
+    const linkedInputs = channel
+      ? document.querySelectorAll(
+          `.display-source-radio[data-channel="${channel}"] .radio-option`,
+        )
+      : false;
+    const linkedPauseButtons = channel
+      ? document.querySelectorAll(`.pause-button[data-channel="${channel}"]`)
+      : false;
+
+    if (linkedInputs) {
+      registerStateChangeEvent(
+        "power_updated",
+        powerBtn,
+        [...linkedInputs],
+        (e) => {
+          const linkedInput = e.currentTarget;
+          const currentState =
+            linkedInput.getAttribute("data-value") === "true" ? true : false;
+          setDisplaySourceOptionState(linkedInput, currentState);
+        },
+      );
+    }
+
+    if (linkedPauseButtons) {
+      registerStateChangeEvent(
+        "power_updated",
+        powerBtn,
+        [...linkedPauseButtons],
+        (e) => {
+          const linkedPause = e.currentTarget;
+          const currentState =
+            linkedPause.getAttribute("data-value") === "true" ? true : false;
+          setVideoMuteButtonState(linkedPause, currentState);
+        },
+      );
+    }
+  });
+
+  // Video mute buttons: Update linked inputs on state change
+  document.querySelectorAll(".pause-button").forEach((powerBtn) => {
+    const channel = powerBtn.getAttribute("data-channel");
+    const linkedInputs = channel
+      ? document.querySelectorAll(
+          `.display-source-radio[data-channel="${channel}"] .radio-option`,
+        )
+      : false;
+
+    if (linkedInputs) {
+      registerStateChangeEvent(
+        "video_mute_updated",
+        powerBtn,
+        [...linkedInputs],
+        (e) => {
+          const linkedInput = e.currentTarget;
+          const currentState =
+            linkedInput.getAttribute("data-value") === "true" ? true : false;
+          setDisplaySourceOptionState(linkedInput, currentState);
+        },
+      );
+    }
+  });
+
+  // Audio mute buttons: Update linked volume sliders
+  document.querySelectorAll(".mute").forEach((muteBtn) => {
+    const channel = muteBtn.getAttribute("data-channel");
+    const linkedVolume = channel
+      ? document.querySelectorAll(`.slider[data-channel="${channel}"]`)
+      : false;
+
+    if (linkedVolume) {
+      registerStateChangeEvent(
+        "mute_updated",
+        muteBtn,
+        [...linkedVolume],
+        (e) => {
+          const slider = e.currentTarget;
+          setVolumeSliderState(slider, slider.value);
+        },
+      );
+    }
+  });
+}
+
 function drawUI(config) {
   clearDisplay();
 
@@ -535,6 +630,10 @@ function drawUI(config) {
   if (config.modals) {
     setupModals(config.modals, false);
   }
+
+  // Add default state change events/listeners to linked power, display source, and video mute controls;
+  // also default links between audio mute and volume controls
+  setupControlLinks();
 
   // Tell modules it's safe to attach custom listeners to controls
   window.dispatchEvent(new Event("ui_ready"));

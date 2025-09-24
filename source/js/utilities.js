@@ -129,7 +129,7 @@ function enableControl(control, listener = null) {
  * When triggerInput state is updated, dispatch event on subscribers
  * eventName - string
  * triggerInput - DOM element
- * subscribers - array of ID strings
+ * subscribers - array of DOM elements
  * callback - function to be called by subscribers when eventName is emitted on them
  */
 function registerStateChangeEvent(

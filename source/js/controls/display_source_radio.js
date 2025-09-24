@@ -6,12 +6,11 @@
 
 import { updateStatus } from "../orchestrator_request.js";
 import { setButtonState } from "./toggle_button.js";
-import { setPowerState, handleTogglePower } from "./power_button.js";
+import { handleTogglePower } from "./power_button.js";
 import {
   followPath,
   mergeJSON,
   useProgressBar,
-  dispatchStateChangeEvents,
   disableControl,
   enableControl,
 } from "../utilities.js";
@@ -47,9 +46,6 @@ function setDisplaySourceOptionState(btn, state) {
 
   // Set button state
   setButtonState(btn, state, handleDisplaySourceSelect);
-
-  // Alert modules with dependencies on this control's state
-  dispatchStateChangeEvents(btn);
 }
 
 function handleDisplaySourceSelect(e) {
@@ -145,7 +141,8 @@ function handleDisplaySourceSelect(e) {
 
           // block power clicks & show visual feedback on the button
           disableControl(powerBtn, handleTogglePower);
-          setPowerState(powerBtn, true);
+          // setPowerState(powerBtn, true);
+          setButtonState(powerBtn, true, handleTogglePower);
 
           powerActionInitiated = true;
         }

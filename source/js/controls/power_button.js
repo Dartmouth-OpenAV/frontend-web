@@ -10,10 +10,7 @@ import {
   setVideoMuteButtonState,
   handleVideoMute,
 } from "./video_mute_button.js";
-import {
-  setDisplaySourceOptionState,
-  handleDisplaySourceSelect,
-} from "./display_source_radio.js";
+import { handleDisplaySourceSelect } from "./display_source_radio.js";
 import {
   followPath,
   mergeJSON,
@@ -22,48 +19,12 @@ import {
   useProgressBar,
   disableControl,
   enableControl,
-  dispatchStateChangeEvents,
 } from "../utilities.js";
 
 const shutdownWarningTime = 60; // seconds
 
 function setPowerState(powerBtn, state) {
   setButtonState(powerBtn, state, handleTogglePower);
-
-  // update dependent buttons
-  const channel = powerBtn.getAttribute("data-channel");
-  if (channel) {
-    // toggle visibility of linked video mute
-    const linkedPauseButtons = document.querySelectorAll(
-      `.pause-button[data-channel="${channel}"]`,
-    );
-    linkedPauseButtons.forEach((pauseBtn) => {
-      if (state === true) {
-        pauseBtn.classList.remove("invisible");
-      } else {
-        pauseBtn.classList.add("invisible");
-      }
-
-      // also re-evaluate state
-      const currentState =
-        pauseBtn.getAttribute("data-value") === "true" ? true : false;
-      setVideoMuteButtonState(pauseBtn, currentState);
-    });
-
-    // ask linkedInputs to re-evaluate themselves
-    const linkedInputs = document.querySelectorAll(
-      `.display-source-radio[data-channel="${channel}"] .radio-option`,
-    );
-
-    linkedInputs.forEach((input) => {
-      const currentState =
-        input.getAttribute("data-value") === "true" ? true : false;
-      setDisplaySourceOptionState(input, currentState);
-    });
-  }
-
-  // Alert modules with dependencies on this control's state
-  dispatchStateChangeEvents(powerBtn);
 }
 
 function handleTogglePower(e) {
@@ -209,7 +170,7 @@ function handleTogglePower(e) {
               ? radio.querySelector("[data-value=true]")
               : radio.querySelector(".radio-option");
 
-            // make sure data-value gets set for setPowerState to read
+            // make sure data-value gets set for state setter to read
             selectedInput.setAttribute("data-value", true);
 
             // add to payload
@@ -289,4 +250,4 @@ function handleTogglePower(e) {
 }
 
 // Export functions
-export { setPowerState, handleTogglePower };
+export { handleTogglePower };

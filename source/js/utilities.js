@@ -107,16 +107,20 @@ function sendUIInteractionUpdate() {
   }
 }
 
-function disableControl(control, listener) {
-  control.removeEventListener("click", listener);
-  control.removeEventListener("touchstart", listener);
+function disableControl(control, listener = null) {
+  if (listener) {
+    control.removeEventListener("click", listener);
+    control.removeEventListener("touchstart", listener);
+  }
   control.removeAttribute("data-allow-events");
   control.classList.add("no-pointer-events");
 }
 
-function enableControl(control, listener) {
-  control.addEventListener("click", listener);
-  control.addEventListener("touchstart", listener);
+function enableControl(control, listener = null) {
+  if (listener) {
+    control.addEventListener("click", listener);
+    control.addEventListener("touchstart", listener);
+  }
   control.setAttribute("data-allow-events", "");
   control.classList.remove("no-pointer-events");
 }

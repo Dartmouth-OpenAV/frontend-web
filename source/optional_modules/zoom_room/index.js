@@ -1,7 +1,10 @@
 /* Global variables */
 import { globals } from "../../js/globals.js";
 import { updateStatus } from "../../js/orchestrator_request.js";
-import { bumpMainContentForBanners, registerStateChangeEvent } from "../../js/utilities.js";
+import {
+  bumpMainContentForBanners,
+  registerStateChangeEvent,
+} from "../../js/utilities.js";
 import { attachSharedModalListeners, openModal } from "../../js/modals.js";
 import banners from "./components/zoom_banners.html";
 import joinManualModal from "./components/join_manual_modal.html";
@@ -54,6 +57,9 @@ function leaveZoomMeeting(callback = null) {
   banner.querySelector(".feedback-message").innerHTML =
     `Leaving meeting: ${currentMeeting}`;
   showBanner();
+
+  // add a hook for powerHandler to see the leave attempt initiated
+  banner.setAttribute("data-leaving-meeting", "");
 
   // Post leave request to orchestrator
   const payload = JSON.stringify({
@@ -179,7 +185,9 @@ function openZoomPrompt() {
 function selectZoomInput(input) {
   // check if there is another Zoom input in the same radio
   const radioGroup = input.parentElement;
-  const zoomOpts = radioGroup.querySelectorAll("[data-zoom-meeting-prompt], [data-zoom-share-prompt]");
+  const zoomOpts = radioGroup.querySelectorAll(
+    "[data-zoom-meeting-prompt], [data-zoom-share-prompt]",
+  );
   if (zoomOpts.length > 1) {
     // De-select all Zoom inputs
     radioGroup
@@ -190,6 +198,7 @@ function selectZoomInput(input) {
         opt.removeAttribute("data-zoom-last-selected");
       });
 
+    // select the requested input
     input.setAttribute("data-override", false);
     input.setAttribute("data-zoom-last-selected", "");
     if (input.getAttribute("data-override") !== "true") {
@@ -217,7 +226,9 @@ function displayZoomStatus(e) {
 
   // Highlight correct Zoom inputs
   document
-    .querySelectorAll("[data-zoom-last-selected][data-value=true][data-override=false]")
+    .querySelectorAll(
+      "[data-zoom-last-selected][data-value=true][data-override=false]",
+    )
     .forEach((input) => {
       selectZoomInput(input);
     });
@@ -238,6 +249,9 @@ function displayZoomStatus(e) {
 
     showLeaveBtn();
     showBanner();
+
+    // add a hook for powerHandler to see a meeting is joined
+    zoomBanner.setAttribute("data-meeting-joined", "");
   }
 
   // connecting
@@ -268,11 +282,16 @@ function displayZoomStatus(e) {
 
     cleanUpLeaveBtn();
     showBanner();
+
+    // clear old data
+    zoomBanner.removeAttribute("data-meeting-joined");
   }
 
   // no meeting, clean up banner and leave button
   if (!meetingStatus || meetingStatus === "not_in_meeting") {
     zoomBanner.classList.add("hidden");
+    zoomBanner.removeAttribute("data-meeting-joined");
+    zoomBanner.removeAttribute("data-leaving-meeting");
     cleanUpLeaveBtn();
     bumpMainContentForBanners();
   }
@@ -309,13 +328,11 @@ function displayZoomStatus(e) {
 
 function handleZoomMeetingPromptClick(event) {
   openZoomPrompt();
-  console.log("currentTarget", event.currentTarget);
   selectZoomInput(event.currentTarget);
 }
 
 function handleZoomSharePromptClick(event) {
   openModal(null, "share-screen-zoom-prompt");
-  console.log("currentTarget", event.currentTarget);
   selectZoomInput(event.currentTarget);
 }
 
@@ -329,7 +346,8 @@ function initiateZoomGUI() {
     if (!document.getElementById("zoom-room-notification")) {
       const zoomIconHTML =
         document.getElementById("zoom-icon-template").innerHTML;
-      const micIconHTML = document.getElementById("mic-icon-template").innerHTML;
+      const micIconHTML =
+        document.getElementById("mic-icon-template").innerHTML;
       const bannersHTML = banners
         .replace(/{{zoom_icon}}/g, zoomIconHTML)
         .replace(/{{mic_icon}}/g, micIconHTML);
@@ -392,11 +410,54 @@ function initiateZoomGUI() {
       }
     });
 
-    // Add to state change callbacks list for Zoom inputs
+    // Register state change callbacks for Zoom inputs and any linked Power buttons
+    function inputChangeCallback(e) {
+      // e.currentTarget is the parent radio in this case
+      e.currentTarget
+        .querySelectorAll(
+          "[data-zoom-last-selected][data-value=true][data-override=false]",
+        )
+        .forEach((input) => {
+          selectZoomInput(input);
+        });
+    }
+
+    function powerHandler(e) {
+      const triggerBtn = e.detail;
+      if (triggerBtn.getAttribute("data-value") === "false") {
+        const banner = document.getElementById("zoom-room-notification");
+        const meetingJoined = banner.hasAttribute("data-meeting-joined");
+        const leaveInitiated = banner.hasAttribute("data-leaving-meeting");
+        if (meetingJoined && !leaveInitiated) {
+          leaveZoomMeeting();
+        }
+      }
+    }
+
     document
       .querySelectorAll("[data-zoom-meeting-prompt], [data-zoom-share-prompt]")
       .forEach((input) => {
-        registerStateChangeEvent("zoom_input_updated", input);
+        // Re-evaluate selected Zoom input when any Zoom input state changes
+        registerStateChangeEvent(
+          "zoom_input_updated",
+          input,
+          [input.parentElement],
+          inputChangeCallback,
+        );
+
+        // Look for linked power buttons, which should trigger Zoom leave on shutdown
+        const channel = input.parentElement.getAttribute("data-channel");
+        const linkedPower = channel
+          ? document.querySelector(`.power-button[data-channel=${channel}]`)
+          : null;
+        if (linkedPower) {
+          registerStateChangeEvent(
+            "power_updated",
+            linkedPower,
+            [document.body],
+            powerHandler,
+          );
+        }
       });
 
     // Attach static listeners to inputs in custom Zoom modals, eg. Cancel/Back dismiss buttons
@@ -450,15 +511,6 @@ function initiateZoomGUI() {
 
     // Start listening for state changes from main
     window.addEventListener("new_state", displayZoomStatus);
-
-    // Listen for Zoom input updates (which don't necessarily come from refreshState)
-    window.addEventListener("zoom_input_updated", () => {
-      document
-        .querySelectorAll("[data-zoom-last-selected][data-value=true][data-override=false]")
-        .forEach((input) => {
-          selectZoomInput(input);
-        });
-    });
   }
 }
 

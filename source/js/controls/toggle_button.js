@@ -4,7 +4,11 @@
  *
  */
 import { updateStatus } from "../orchestrator_request.js";
-import { disableControl, enableControl } from "../utilities.js";
+import {
+  disableControl,
+  enableControl,
+  dispatchStateChangeEvents,
+} from "../utilities.js";
 
 function setButtonState(btn, state, handler) {
   if (state === true && btn.getAttribute("data-override") !== "true") {
@@ -21,6 +25,9 @@ function setButtonState(btn, state, handler) {
     btn.addEventListener("click", handler);
     btn.addEventListener("touchstart", handler);
   }
+
+  // Alert modules with dependencies on this control's state
+  dispatchStateChangeEvents(btn);
 }
 
 function handleToggleButton(e) {

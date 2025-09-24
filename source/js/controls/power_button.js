@@ -6,7 +6,10 @@
 
 import { updateStatus } from "../orchestrator_request.js";
 import { setButtonState } from "./toggle_button.js";
-import { setVideoMuteButtonState, handleVideoMute } from "./video_mute_button.js";
+import {
+  setVideoMuteButtonState,
+  handleVideoMute,
+} from "./video_mute_button.js";
 import {
   setDisplaySourceOptionState,
   handleDisplaySourceSelect,
@@ -19,6 +22,7 @@ import {
   useProgressBar,
   disableControl,
   enableControl,
+  dispatchStateChangeEvents,
 } from "../utilities.js";
 
 const shutdownWarningTime = 60; // seconds
@@ -50,12 +54,16 @@ function setPowerState(powerBtn, state) {
     const linkedInputs = document.querySelectorAll(
       `.display-source-radio[data-channel="${channel}"] .radio-option`,
     );
+
     linkedInputs.forEach((input) => {
       const currentState =
         input.getAttribute("data-value") === "true" ? true : false;
       setDisplaySourceOptionState(input, currentState);
     });
   }
+
+  // Alert modules with dependencies on this control's state
+  dispatchStateChangeEvents(powerBtn);
 }
 
 function handleTogglePower(e) {
@@ -232,8 +240,8 @@ function handleTogglePower(e) {
         });
 
         linkedInputs.forEach((input) => {
-          // input.setAttribute("data-override", true);
-          setDisplaySourceOptionState(input, false);
+          input.setAttribute("data-override", true);
+          // setDisplaySourceOptionState(input, false);
         });
       }
     }

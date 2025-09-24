@@ -5,7 +5,11 @@
  */
 
 import { updateStatus } from "../orchestrator_request.js";
-import { disableControl, enableControl } from "../utilities.js";
+import {
+  disableControl,
+  enableControl,
+  dispatchStateChangeEvents,
+} from "../utilities.js";
 import { setDisplaySourceOptionState } from "./display_source_radio.js";
 
 function setVideoMuteButtonState(btn, state) {
@@ -42,6 +46,9 @@ function setVideoMuteButtonState(btn, state) {
         setDisplaySourceOptionState(input, currentState);
       });
   }
+
+  // Alert modules with dependencies on this control's state
+  dispatchStateChangeEvents(btn);
 }
 
 function handleVideoMute(e) {

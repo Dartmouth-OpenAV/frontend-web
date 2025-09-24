@@ -6,6 +6,7 @@
 
 // import { refresh, availableTimers, updateStatus } from '../main.js';
 import { updateStatus } from "../orchestrator_request.js";
+import { dispatchStateChangeEvents } from "../utilities.js";
 
 let handleVolumeOngoing = false;
 
@@ -49,6 +50,9 @@ function setVolumeSliderState(slider, level) {
   if (slider.hasAttribute("data-allow-events")) {
     slider.addEventListener("input", handleVolumeSlider);
   }
+
+  // Alert modules with dependencies on this control's state
+  dispatchStateChangeEvents(slider);
 }
 
 // Removed unused "isRecursion = false" from declaration

@@ -48,7 +48,7 @@ function setDisplaySourceOptionState(btn, state) {
   // Set button state
   setButtonState(btn, state, handleDisplaySourceSelect);
 
-  // Alert modules with dependencies on this button's state
+  // Alert modules with dependencies on this control's state
   dispatchStateChangeEvents(btn);
 }
 

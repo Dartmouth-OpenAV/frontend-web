@@ -15,8 +15,6 @@ import shareScreenModal from "./components/share_screen_modal.html";
 import sharingKeyTemplate from "./components/sharing_key.html";
 import "./zoom.css";
 
-/* Zoom variables */
-//const abandonedZoomWaitTime = 7200000; // milliseconds (2hs)
 let zoomData;
 
 function showBanner() {
@@ -86,11 +84,18 @@ function handleSuggestedJoinSubmit() {
     modal.classList.add("hidden");
   }
 
-  joinZoomMeeting(
-    zoomData.suggested_meeting?.meeting_id,
-    zoomData.suggested_meeting?.meeting_password,
-    reset,
-  );
+  if (zoomData.suggested_meeting?.id && zoomData.suggested_meeting?.password) {
+    joinZoomMeeting(
+      zoomData.suggested_meeting.id,
+      zoomData.suggested_meeting.password,
+      reset,
+    );
+  } else {
+    console.error(
+      "Could not join suggested Zoom meeting; missing id or password",
+    );
+    reset();
+  }
 }
 
 function handleManualJoinSubmit(e) {
@@ -161,7 +166,7 @@ function openZoomPrompt() {
     // update modal text
     const modal = document.getElementById("scheduled-zoom-prompt");
     modal.querySelector(".meeting-name").textContent =
-      zoomData.suggested_meeting.meeting_name;
+      zoomData.suggested_meeting.name;
 
     // re-attach submit listener
     modal

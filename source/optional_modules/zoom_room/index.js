@@ -54,6 +54,8 @@ function leaveZoomMeeting(callback = null) {
 
   banner.querySelector(".feedback-message").innerHTML =
     `Leaving meeting: ${currentMeeting}`;
+  const leaveBtn = banner.querySelector("button[name=leave-meeting]");
+  leaveBtn.classList.add("hidden");
   showBanner();
 
   // add a hook for powerHandler to see the leave attempt initiated
@@ -212,6 +214,78 @@ function selectZoomInput(input) {
   }
 }
 
+function handleZoomRoomWarning(e) {
+  const btn = e.target;
+  const banner = btn.parentElement;
+
+  function reset() {
+    // clean up banner
+    banner.classList.add("hidden");
+    btn.classList.remove("active");
+    bumpMainContentForBanners();
+  }
+
+  // visual feedback
+  btn.classList.add("active");
+
+  // block clicks until next time warning state is triggered
+  btn.removeAttribute("click", handleZoomRoomWarning);
+  btn.removeAttribute("touchstart", handleZoomRoomWarning);
+
+  // post unmute request
+  const action = btn.getAttribute("data-action");
+  const payload = JSON.stringify({
+    zoom_room: {
+      meeting: {
+        presence: {
+          [action]: false,
+        },
+      },
+    },
+  });
+
+  updateStatus(payload, reset);
+}
+
+function checkForZoomRoomWarnings() {
+  const audioWarningBanner = document.getElementById("zoom-room-audio-warning");
+  const cameraWarningBanner = document.getElementById(
+    "zoom-room-camera-warning",
+  );
+
+  if (
+    zoomData.meeting?.presence?.microphone_muted === "false" ||
+    zoomData.meeting?.presence?.microphone_muted === true
+  ) {
+    audioWarningBanner
+      .querySelector("button")
+      .addEventListener("click", handleZoomRoomWarning);
+    audioWarningBanner
+      .querySelector("button")
+      .addEventListener("touchstart", handleZoomRoomWarning);
+    audioWarningBanner.classList.remove("hidden");
+  } else {
+    audioWarningBanner.classList.add("hidden");
+  }
+
+  if (
+    zoomData.meeting?.presence?.video_muted === "false" ||
+    zoomData.meeting?.presence?.video_muted === true
+  ) {
+    cameraWarningBanner
+      .querySelector("button")
+      .addEventListener("click", handleZoomRoomWarning);
+    cameraWarningBanner
+      .querySelector("button")
+      .addEventListener("touchstart", handleZoomRoomWarning);
+    cameraWarningBanner.classList.remove("hidden");
+  } else {
+    cameraWarningBanner.classList.add("hidden");
+  }
+
+  bumpMainContentForBanners();
+}
+
 function displayZoomStatus(e) {
   zoomData = e.detail.zoom_room;
 
@@ -238,7 +312,7 @@ function displayZoomStatus(e) {
       selectZoomInput(input);
     });
 
-  // Update banner
+  // Update banners
   const meetingStatus = zoomData.meeting?.status
     ? zoomData.meeting.status
     : false;
@@ -257,6 +331,9 @@ function displayZoomStatus(e) {
 
     // add a hook for powerHandler to see a meeting is joined
     zoomBanner.setAttribute("data-meeting-joined", "");
+
+    // check if Zoom Room mic or camera is muted
+    checkForZoomRoomWarnings();
   }
 
   // connecting
@@ -298,6 +375,11 @@ function displayZoomStatus(e) {
     zoomBanner.removeAttribute("data-meeting-joined");
     zoomBanner.removeAttribute("data-leaving-meeting");
     cleanUpLeaveBtn();
+
+    // clear any moot Zoom warnings (no meeting)
+    document.getElementById("zoom-room-audio-warning").classList.add("hidden");
+    document.getElementById("zoom-room-camera-warning").classList.add("hidden");
+
     bumpMainContentForBanners();
   }
 

@@ -31,10 +31,10 @@
   background-color: var(--zoom-blue);
   border: 0.1rem solid #1161b0;
 }
-.banner#zoom-room-notification button {
+.banner#zoom-room-notification .button-label {
   color: var(--zoom-blue);
 }
-.banner#zoom-room-notification button.active {
+.banner#zoom-room-notification button.active, .banner#zoom-room-notification button:active {
   background-color: #3b94ec;
 }
 .banner#zoom-room-notification p {

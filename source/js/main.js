@@ -106,9 +106,9 @@ function setupControlSet(
       : "";
     const otherAttributes = Object.hasOwn(
       data.controls[control],
-      "data_attributes",
+      "module_hooks",
     )
-      ? data.controls[control].data_attributes
+      ? data.controls[control].module_hooks
           .map((attr) => `data-${attr}`)
           .join(" ")
       : "";
@@ -253,9 +253,9 @@ function setupControlSet(
 
         const otherAttributes = Object.hasOwn(
           data.controls[control].options[option],
-          "data_attributes",
+          "module_hooks",
         )
-          ? data.controls[control].options[option].data_attributes
+          ? data.controls[control].options[option].module_hooks
               .map((attr) => `data-${attr}`)
               .join(" ")
           : "";

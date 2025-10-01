@@ -705,15 +705,18 @@ h1#room-name {
   min-width: max-content;
   height: 4.8rem;
 }
+.banner button.text-only .button-label {
+  font-size: 2.4rem;
+}
 
 .banner.warning {
   background-color: var(--warning-red);
   border: 0.1rem solid #c6142b;
 }
-.banner.warning button {
+.banner.warning button, .banner.warning .button-label {
   color: var(--warning-red);
 }
-.banner.warning button.active {
+.banner.warning button.active, .banner.warning button:active {
   color: #fff;
   background-color: #ee5267;
 }

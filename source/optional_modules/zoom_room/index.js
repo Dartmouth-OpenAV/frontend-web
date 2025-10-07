@@ -254,7 +254,7 @@ function checkForZoomRoomWarnings() {
   );
 
   if (
-    zoomData.meeting?.presence?.microphone_muted === "true" ||
+    zoomData.meeting?.presence?.microphone_muted === "false" ||
     zoomData.meeting?.presence?.microphone_muted === true
   ) {
     audioWarningBanner
@@ -269,7 +269,7 @@ function checkForZoomRoomWarnings() {
   }
 
   if (
-    zoomData.meeting?.presence?.video_muted === "true" ||
+    zoomData.meeting?.presence?.video_muted === "false" ||
     zoomData.meeting?.presence?.video_muted === true
   ) {
     cameraWarningBanner

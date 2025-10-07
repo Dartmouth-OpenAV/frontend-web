@@ -7,43 +7,16 @@ let retries = MAX_RETRIES;
 
 const updateStack = [];
 
-async function failover() {
-  console.log("time to failover");
-  const backupOrchestrators = globals.getState()?.backup_orchestrators;
-  console.log("backupOrchestrators", backupOrchestrators);
+function failover() {
+  console.log("failover placeholder");
 
-  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+  // emit update_complete
 
-  if (backupOrchestrators && backupOrchestrators.length > 0) {
-    // randomizedBackups = randomize backupOrchestrators based on a seed
+  // set a new orchestrator ...
 
-    // Every 1000ms, send a GET /version request to the next potential backup orchestrator API (port 81)
-    // to see if it is available to serve this client
-    for (const orchestrator of backupOrchestrators) {
-      fetch(`${orchestrator}:81/version`)
-        .then((response) => {
-          console.log(`response from ${orchestrator}`, response);
-          return response.json();
-        })
-        .then((json) => {
-          console.log("json", json);
-          // good to go, don't have to worry about breaking and closing other connections etc
-          // because we're about to reload at a different URL
-          const newLocation = `${orchestrator}?`
-          console.log("Would have gone to ", newLocation);
-          //location.replace(newLocation);
-        })
-        .catch((err) => {
-          console.log(`Error connecting to ${orchestrator}`, err);
-        });
+  // retries = 0;
 
-      // timeout for 1 second 
-      await delay(1000);
-    }
-  } else {
-    console.log("No backup_orchestrators configured");
-    // TO DO: display failure message to user?
-  }
+  return false;
 }
 
 /*(function failback() {
@@ -68,11 +41,7 @@ async function orchestratorRequest(url, options) {
         return retry();
       }
       retries = MAX_RETRIES; // make sure retries gets reset after success
-      // return response;
-
-      // DEV ONLY: testing failover
       return response;
-      // return globals.getState() ? failover() : response; // DEV ONLY testing failover!!!
     })
     .catch((err) => {
       console.log(err);

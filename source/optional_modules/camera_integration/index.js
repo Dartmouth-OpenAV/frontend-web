@@ -8,11 +8,11 @@ function initiateCameraIntegration() {
   // make sure elements only get initialized once
   if (!guiInitiated) {
     document
-      .querySelectorAll("[data-camera-zoom-true]")
-      .forEach((cameraPreset) => {
+      .querySelectorAll("[data-zoom-meeting-prompt]")
+      .forEach((zoomInput) => {
         document
-          .querySelectorAll("[data-zoom-meeting-prompt]")
-          .forEach((zoomInput) => {
+          .querySelectorAll("[data-camera-zoom-true]")
+          .forEach((cameraPreset) => {
             // Re-evaluate selected camera input when any Zoom input state changes
             registerStateChangeEvent(
               "zoom_input_updated",
@@ -25,19 +25,15 @@ function initiateCameraIntegration() {
     document
       .querySelectorAll("[data-camera-power-false]")
       .forEach((cameraPreset) => {
-        // Look for linked power buttons, which should trigger privacy preset on shutdown
-        const channel = cameraPreset.parentElement.getAttribute("data-channel");
-        const linkedPower = channel
-          ? document.querySelector(`.power-button[data-channel=${channel}]`)
-          : null;
-        if (linkedPower) {
+        // Look for power buttons, which should trigger privacy preset on shutdown
+        document.querySelectorAll(".power-button").forEach((powerButton) => {
           registerStateChangeEvent(
             "power_updated",
-            linkedPower,
+            powerButton,
             [cameraPreset],
             handlePowerSelected,
           );
-        }
+        });
       });
     guiInitiated = true;
   }
@@ -46,55 +42,45 @@ function initiateCameraIntegration() {
 function handleZoomSelected(e) {
   // If Zoom is turned on, set the cameras to default preset unless another preset is already selected
   const triggerBtn = e.detail;
-  const triggerBtnParent = triggerBtn.parentElement;
+  const targetBtn = e.target;
   if (triggerBtn.getAttribute("data-value") === "false") {
     return;
   }
-  const channel = triggerBtnParent.getAttribute("data-channel");
-  document
-    .querySelectorAll(`.camera-preset-radio[data-channel*=${channel}]`)
-    .forEach((radio) => {
-      const radioIsSetToPrivacy = radio.querySelector(
-        ".radio-option[data-option=privacy][data-value=true]",
-      )
-        ? true
-        : false;
-      const noPresetSelected = radio.querySelector(".radio-option.active")
-        ? false
-        : true;
-      if (radioIsSetToPrivacy || noPresetSelected) {
-        const targetBtn = e.target;
-        const value = true;
-        const payload = targetBtn
-          .getAttribute("data-path")
-          .replace(/<value>/, value);
-        updateStatus(payload, null);
-      }
-    });
+  const targetBtnParent = e.target.parentElement;
+  const radioIsSetToPrivacy = targetBtnParent.querySelector(
+    ".radio-option[data-option=privacy][data-value=true]",
+  )
+    ? true
+    : false;
+  const noPresetSelected = targetBtnParent.querySelector(".radio-option.active")
+    ? false
+    : true;
+  if (radioIsSetToPrivacy || noPresetSelected) {
+    const payload = targetBtn
+      .getAttribute("data-path")
+      .replace(/<value>/, true);
+    updateStatus(payload, null);
+  }
 }
 
 function handlePowerSelected(e) {
   // If last power is turned off, set the cameras to called preset
   const triggerBtn = e.detail;
+  const targetBtn = e.target;
   if (triggerBtn.getAttribute("data-value") === "true") {
     return;
   }
-  const targetBtn = e.target;
-  const channel = targetBtn.parentElement.getAttribute("data-channel");
-  const allChannelPowerOff =
-    document.querySelectorAll(
-      `.power-button[data-channel="${channel}"] .active`,
-    ).length === 0;
+  const allPowerOff =
+    document.querySelectorAll(`.power-button .active`).length === 0;
   // If recording doesn't exist OR is not active AND all power buttons are off, set the cameras to called preset
   if (
     (!Object.hasOwn(globals.getState(), "recording") ||
       globals.getState().recording?.status?.recording === false) &&
-    allChannelPowerOff
+    allPowerOff
   ) {
-    const value = true;
     const payload = targetBtn
       .getAttribute("data-path")
-      .replace(/<value>/, value);
+      .replace(/<value>/, true);
     updateStatus(payload, null);
   }
 }

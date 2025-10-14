@@ -144,7 +144,7 @@ function setupControlSet(
       console.error("No type specified for " + control);
       throwClientError(
         `Misconfigured control (no "type"): ${control}`,
-        "oX*pyk4zNiQi",
+        "7qujwwHiGMDN",
         3,
       );
     }
@@ -719,7 +719,7 @@ window.addEventListener("load", async () => {
     attemptFailback();
     throwClientError(
       `${queryParams.get("failback_host")} has failed over to this host`,
-      "Np@gBF_KT39!",
+      "3oP8UUsZU876",
       3,
     );
   }

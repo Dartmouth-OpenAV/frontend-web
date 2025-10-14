@@ -72,9 +72,7 @@ async function failover() {
 
   if (backupHosts && backupHosts.length > 0) {
     // Shuffle the backup_orchestrators list deterministically, using the system as a seed
-    console.log("backupHosts", backupHosts);
     const shuffledBackups = shuffleArrayWithSeed(backupHosts, globals.getSystem());
-    console.log("shuffledBackups", shuffledBackups);
 
     // Every 1000ms, send a GET /version request to the next potential backup orchestrator API (port 81)
     // to see if it is available to serve this client
@@ -120,7 +118,6 @@ async function orchestratorRequest(url, options) {
       }
       retries = MAX_RETRIES; // make sure retries gets reset after success
       return response;
-      // return globals.getState() ? failover() : response; // DEV ONLY testing failover!!!
     })
     .catch((err) => {
       console.log(err);

@@ -210,6 +210,11 @@ function dispatchStateChangeEvents(input) {
       }
     } catch (err) {
       console.error("Error parsing data-change-events", err);
+      throwClientError(
+        `Error parsing data-change-events: ${err.reason?.stack}`,
+        "4zeCY2Leq@ne",
+        3,
+      );
     }
   }
 }

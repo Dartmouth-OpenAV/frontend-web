@@ -9,6 +9,7 @@ import {
   followPath,
   bumpMainContentForBanners,
   registerStateChangeEvent,
+  throwClientError,
 } from "./utilities.js";
 import {
   handlePanTiltZoom,
@@ -726,5 +727,22 @@ window.addEventListener("update_complete", () => {
   refresh = window.setTimeout(refreshState, REFRESH_WAIT);
   // refreshState(); <-- Again, although tempting, makes volume slider jumpy
 });
+
+/* Global runtime error catching */
+function globalErrorHandler(e) {
+  e.preventDefault();
+  console.error(e);
+
+  // POST error to orchestrator, severity 1 (highest)
+  throwClientError(
+    `Unhandled Javascript error: ${e.reason.stack}\nLast get_status: ${
+      globals.getState() ? JSON.stringify(globals.getState()) : ""
+    }`,
+    "84hfn3jd7h4n",
+    1,
+  );
+}
+window.addEventListener("error", globalErrorHandler);
+window.addEventListener("unhandledrejection", globalErrorHandler);
 
 export { setupControlSet };

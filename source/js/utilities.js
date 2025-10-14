@@ -5,8 +5,7 @@
  *
  *
  */
-// import { updateStatus } from "./main.js";
-import { updateStatus } from "./orchestrator_request.js";
+import { updateStatus, orchestratorRequest } from "./orchestrator_request.js";
 import { globals } from "./globals.js";
 
 let countdownTimeoutId;
@@ -215,6 +214,26 @@ function dispatchStateChangeEvents(input) {
   }
 }
 
+// Post error to orchestrator
+async function throwClientError(message, code, severity) {
+  // Send the update to the orchestrator
+  const orchestrator = globals.getOrchestrator();
+  const response = await orchestratorRequest(
+    `${orchestrator}/api/errors/client`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        message: message,
+        code: code,
+        severity: severity,
+      }),
+    },
+  ).catch((error) => {
+    console.error("Error in function throwClientError: ", error);
+  });
+  return response;
+}
+
 // Export functions
 export {
   mergeJSON,
@@ -228,4 +247,5 @@ export {
   enableControl,
   registerStateChangeEvent,
   dispatchStateChangeEvents,
+  throwClientError,
 };

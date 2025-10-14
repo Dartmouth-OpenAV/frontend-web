@@ -7,21 +7,99 @@ let retries = MAX_RETRIES;
 
 const updateStack = [];
 
-function failover() {
-  console.log("failover placeholder");
+async function healthcheckHost(hostname) {
+  const orchestrator = await fetch(`${hostname}/config`)
+    .then((response) => {
+      return response.json();
+    })
+    .then((json) => {
+      return json.orchestrator;
+    })
+    .catch((err) => {
+      console.log(`Error connecting to ${hostname}`, err);
+      return false
+    });
 
-  // emit update_complete
-
-  // set a new orchestrator ...
-
-  // retries = 0;
-
+  // check that this server's home orchestrator is available
+  if (orchestrator) {
+    return fetch(`${orchestrator}/api/version`)
+      .then((response) => {
+        return response.ok
+      })
+      .catch((err) => {
+        console.log(`Error connecting to ${orchestrator}`, err);
+        return false
+      })
+  }
   return false;
 }
 
-/*(function failback() {
-  console.log("failback placeholder");
-}*/
+// Fisher–Yates shuffle with string seed (AI generated)
+function shuffleArrayWithSeed(array, seedStr) {
+  // Simple string → 32-bit integer hash (djb2)
+  function stringToSeed(str) {
+    let h = 5381;
+    for (let i = 0; i < str.length; i++) {
+      h = (h * 33) ^ str.charCodeAt(i);
+    }
+    return h >>> 0; // force unsigned 32-bit
+  }
+
+  // Mulberry32 PRNG
+  function mulberry32(seed) {
+    return function () {
+      seed |= 0;
+      seed = seed + 0x6D2B79F5 | 0;
+      var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  let seed = stringToSeed(seedStr);
+  let rng = mulberry32(seed);
+  let a = array.slice(); // copy to avoid mutating
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+async function failover() {
+  const backupHosts = globals.getState()?.backup_orchestrators;
+  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+  if (backupHosts && backupHosts.length > 0) {
+    // Shuffle the backup_orchestrators list deterministically, using the system as a seed
+    console.log("backupHosts", backupHosts);
+    const shuffledBackups = shuffleArrayWithSeed(backupHosts, globals.getSystem());
+    console.log("shuffledBackups", shuffledBackups);
+
+    // Every 1000ms, send a GET /version request to the next potential backup orchestrator API (port 81)
+    // to see if it is available to serve this client
+    for (const host of shuffledBackups) {
+      if (await healthcheckHost(host)) {
+        // good to go, don't have to worry about breaking and closing other connections etc
+        // because we're about to reload at a different URL
+        let newLocation = `${host}${window.location.search}`;
+
+        // Add failback_host if this is not already failed over from another system
+        if (!window.location.search.includes("failback_host=")) {
+          newLocation += newLocation.includes("?") ? `&failback_host=${location.origin}` : `?failback_host=${location.origin}`;
+        }
+        console.log("Failing over to ", newLocation);
+        location.replace(newLocation);
+      }
+
+      await delay(1000);
+    }
+  } else {
+    console.log("No backup_orchestrators configured");
+    // TO DO: display failure message to user?
+  }
+}
+
 
 // Wrapper function to handle retry and failover
 // On success, return full response; on failure, return failover (which returns False for now)
@@ -42,6 +120,7 @@ async function orchestratorRequest(url, options) {
       }
       retries = MAX_RETRIES; // make sure retries gets reset after success
       return response;
+      // return globals.getState() ? failover() : response; // DEV ONLY testing failover!!!
     })
     .catch((err) => {
       console.log(err);
@@ -52,7 +131,7 @@ async function orchestratorRequest(url, options) {
 // Update stack handling
 const dequeue = () => {
   if (!updateStack[0]) {
-    window.dispatchEvent( new Event("update_complete") );
+    window.dispatchEvent(new Event("update_complete"));
     return;
   }
   // if anything is still on the stack, continue dequeue
@@ -82,9 +161,12 @@ const enqueue = (func, callback) => {
 // pausing/resuming the main refreshStatus loop
 function updateStatus(payload, callback = null) {
   // make sure global orchestrator and system variables are set
-  if (!globals.getOrchestrator() || !globals.getSystem()) {
-    return null; // TO DO: improve handling for this scenario
+  const orchestrator = globals.getOrchestrator();
+  const system = globals.getSystem();
+  if (!orchestrator || !system) {
+    return null;
   }
+
   // OK to proceed
   // Add UI interaction if environment_sensing is present
   if (globals.getState()?.environment_sensing) {
@@ -103,8 +185,8 @@ function updateStatus(payload, callback = null) {
     method: "PUT",
     body: payload,
   };
-  const url = `${globals.getOrchestrator()}/api/systems/${globals.getSystem()}/state`;
+  const url = `${orchestrator}/api/systems/${system}/state`;
   enqueue(() => orchestratorRequest(url, options), callback);
 }
 
-export { updateStatus, orchestratorRequest };
+export { updateStatus, orchestratorRequest, healthcheckHost };

@@ -142,6 +142,11 @@ function setupControlSet(
     const type = data.controls[control]?.type;
     if (!type) {
       console.error("No type specified for " + control);
+      throwClientError(
+        `Misconfigured control (no "type"): ${control}`,
+        "oX*pyk4zNiQi",
+        3,
+      );
     }
 
     const pathAttr = path.replace(/<id>/g, control);
@@ -712,6 +717,11 @@ window.addEventListener("load", async () => {
   // Check if this is a failed over client and failback is needed
   if (queryParams.has("failback_host")) {
     attemptFailback();
+    throwClientError(
+      `${queryParams.get("failback_host")} has failed over to this host`,
+      "Np@gBF_KT39!",
+      3,
+    );
   }
 
   // start refreshState loop
@@ -739,7 +749,7 @@ function globalErrorHandler(e) {
       globals.getState() ? JSON.stringify(globals.getState()) : ""
     }`,
     "84hfn3jd7h4n",
-    1,
+    2,
   );
 }
 window.addEventListener("error", globalErrorHandler);

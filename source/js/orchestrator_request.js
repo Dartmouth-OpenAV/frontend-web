@@ -1,5 +1,6 @@
 /* eslint-disable prettier/prettier */
 import { globals } from "./globals.js";
+import { throwClientError } from "./utilities.js";
 
 const TIMEOUT_WAIT = 5000;
 const MAX_RETRIES = 2;
@@ -141,6 +142,11 @@ const dequeue = () => {
     })
     .catch((err) => {
       console.error("Error from dequeue:", err);
+      throwClientError(
+        `Error dequeing updateStatus stack: ${err.reason?.stack}`,
+        "j_Yzku3RwNkH",
+        2,
+      );
       if (updateStack[0].callback) {
         updateStack[0].callback()
       }

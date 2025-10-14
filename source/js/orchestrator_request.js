@@ -34,20 +34,55 @@ async function healthcheckHost(hostname) {
   return false;
 }
 
+// Fisher–Yates shuffle with string seed (AI generated)
+function shuffleArrayWithSeed(array, seedStr) {
+  // Simple string → 32-bit integer hash (djb2)
+  function stringToSeed(str) {
+    let h = 5381;
+    for (let i = 0; i < str.length; i++) {
+      h = (h * 33) ^ str.charCodeAt(i);
+    }
+    return h >>> 0; // force unsigned 32-bit
+  }
+
+  // Mulberry32 PRNG
+  function mulberry32(seed) {
+    return function () {
+      seed |= 0;
+      seed = seed + 0x6D2B79F5 | 0;
+      var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  let seed = stringToSeed(seedStr);
+  let rng = mulberry32(seed);
+  let a = array.slice(); // copy to avoid mutating
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 async function failover() {
-  const backupServers = globals.getState()?.backup_orchestrators;
+  const backupHosts = globals.getState()?.backup_orchestrators;
   const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-  if (backupServers && backupServers.length > 0) {
-    // randomizedBackups = randomize backupServers based on a seed
+  if (backupHosts && backupHosts.length > 0) {
+    // Shuffle the backup_orchestrators list deterministically, using the system as a seed
+    console.log("backupHosts", backupHosts);
+    const shuffledBackups = shuffleArrayWithSeed(backupHosts, globals.getSystem());
+    console.log("shuffledBackups", shuffledBackups);
 
     // Every 1000ms, send a GET /version request to the next potential backup orchestrator API (port 81)
     // to see if it is available to serve this client
-    for (const server of backupServers) {
-      if (await healthcheckHost(server)) {
+    for (const host of shuffledBackups) {
+      if (await healthcheckHost(host)) {
         // good to go, don't have to worry about breaking and closing other connections etc
         // because we're about to reload at a different URL
-        let newLocation = `${server}${window.location.search}`;
+        let newLocation = `${host}${window.location.search}`;
 
         // Add failback_host if this is not already failed over from another system
         if (!window.location.search.includes("failback_host=")) {
@@ -126,9 +161,12 @@ const enqueue = (func, callback) => {
 // pausing/resuming the main refreshStatus loop
 function updateStatus(payload, callback = null) {
   // make sure global orchestrator and system variables are set
-  if (!globals.getOrchestrator() || !globals.getSystem()) {
-    return null; // TO DO: improve handling for this scenario
+  const orchestrator = globals.getOrchestrator();
+  const system = globals.getSystem();
+  if (!orchestrator || !system) {
+    return null;
   }
+
   // OK to proceed
   // Add UI interaction if environment_sensing is present
   if (globals.getState()?.environment_sensing) {
@@ -147,7 +185,7 @@ function updateStatus(payload, callback = null) {
     method: "PUT",
     body: payload,
   };
-  const url = `${globals.getOrchestrator()}/api/systems/${globals.getSystem()}/state`;
+  const url = `${orchestrator}/api/systems/${system}/state`;
   enqueue(() => orchestratorRequest(url, options), callback);
 }
 

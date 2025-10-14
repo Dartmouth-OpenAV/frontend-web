@@ -7,21 +7,64 @@ let retries = MAX_RETRIES;
 
 const updateStack = [];
 
-function failover() {
-  console.log("failover placeholder");
+async function healthcheckHost(hostname) {
+  const orchestrator = await fetch(`${hostname}/config`)
+    .then((response) => {
+      return response.json();
+    })
+    .then((json) => {
+      return json.orchestrator;
+    })
+    .catch((err) => {
+      console.log(`Error connecting to ${hostname}`, err);
+      return false
+    });
 
-  // emit update_complete
-
-  // set a new orchestrator ...
-
-  // retries = 0;
-
+  // check that this server's home orchestrator is available
+  if (orchestrator) {
+    return fetch(`${orchestrator}/api/version`)
+      .then((response) => {
+        return response.ok
+      })
+      .catch((err) => {
+        console.log(`Error connecting to ${orchestrator}`, err);
+        return false
+      })
+  }
   return false;
 }
 
-/*(function failback() {
-  console.log("failback placeholder");
-}*/
+async function failover() {
+  const backupServers = globals.getState()?.backup_orchestrators;
+  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+  if (backupServers && backupServers.length > 0) {
+    // randomizedBackups = randomize backupServers based on a seed
+
+    // Every 1000ms, send a GET /version request to the next potential backup orchestrator API (port 81)
+    // to see if it is available to serve this client
+    for (const server of backupServers) {
+      if (await healthcheckHost(server)) {
+        // good to go, don't have to worry about breaking and closing other connections etc
+        // because we're about to reload at a different URL
+        let newLocation = `${server}${window.location.search}`;
+
+        // Add failback_host if this is not already failed over from another system
+        if (!window.location.search.includes("failback_host=")) {
+          newLocation += newLocation.includes("?") ? `&failback_host=${location.origin}` : `?failback_host=${location.origin}`;
+        }
+        console.log("Failing over to ", newLocation);
+        location.replace(newLocation);
+      }
+
+      await delay(1000);
+    }
+  } else {
+    console.log("No backup_orchestrators configured");
+    // TO DO: display failure message to user?
+  }
+}
+
 
 // Wrapper function to handle retry and failover
 // On success, return full response; on failure, return failover (which returns False for now)
@@ -42,6 +85,7 @@ async function orchestratorRequest(url, options) {
       }
       retries = MAX_RETRIES; // make sure retries gets reset after success
       return response;
+      // return globals.getState() ? failover() : response; // DEV ONLY testing failover!!!
     })
     .catch((err) => {
       console.log(err);
@@ -52,7 +96,7 @@ async function orchestratorRequest(url, options) {
 // Update stack handling
 const dequeue = () => {
   if (!updateStack[0]) {
-    window.dispatchEvent( new Event("update_complete") );
+    window.dispatchEvent(new Event("update_complete"));
     return;
   }
   // if anything is still on the stack, continue dequeue
@@ -107,4 +151,4 @@ function updateStatus(payload, callback = null) {
   enqueue(() => orchestratorRequest(url, options), callback);
 }
 
-export { updateStatus, orchestratorRequest };
+export { updateStatus, orchestratorRequest, healthcheckHost };

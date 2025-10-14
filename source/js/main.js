@@ -724,6 +724,12 @@ window.addEventListener("load", async () => {
     );
   }
 
+  // Check for scale factor
+  if (queryParams.has("scale")) {
+    const scale = queryParams.get("scale") / 100;
+    document.querySelector(":root").style.setProperty("--scale-factor", scale);
+  }
+
   // start refreshState loop
   refreshState();
 });

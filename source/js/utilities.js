@@ -212,14 +212,14 @@ function dispatchStateChangeEvents(input) {
       console.error("Error parsing data-change-events", err);
       throwClientError(
         `Error parsing data-change-events: ${err.reason?.stack}`,
-        "4zeCY2Leq@ne",
+        "vRLWR3uHP6ta",
         3,
       );
     }
   }
 }
 
-// Post error to orchestrator
+// Post error to orchestrator. Code must match \/^[A-Za-z0-9]{12}$\/
 async function throwClientError(message, code, severity) {
   // Send the update to the orchestrator
   const orchestrator = globals.getOrchestrator();

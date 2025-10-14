@@ -1,6 +1,9 @@
 // Import all required modules
 import { globals } from "./globals.js";
-import { orchestratorRequest } from "./orchestrator_request.js";
+import {
+  orchestratorRequest,
+  healthcheckHost,
+} from "./orchestrator_request.js";
 import { openModal, setupModals } from "./modals.js";
 import {
   followPath,
@@ -27,7 +30,7 @@ import "../css/styles.css";
 
 const REFRESH_WAIT = 5000;
 let refresh;
-
+let failbackHost;
 let nextAvailableTimer = 0;
 
 function clearDisplay() {
@@ -425,14 +428,17 @@ async function refreshState() {
   // Pause refresh loop
   pauseRefresh();
 
-  if (!globals.getOrchestrator() || !globals.getSystem()) {
+  const orchestrator = globals.getOrchestrator();
+  const system = globals.getSystem();
+
+  if (!orchestrator || !system) {
     alert404();
     return null;
   }
 
   // Request state from orchestrator
   const state = await orchestratorRequest(
-    `${globals.getOrchestrator()}/api/systems/${globals.getSystem()}/state`,
+    `${orchestrator}/api/systems/${system}/state`,
   ).then(async (response) => {
     // Do not continue the refresh loop on non-OK responses
     // Add user feedback in case of 404
@@ -467,7 +473,6 @@ async function refreshState() {
     // exclude 204s
     if (state !== "WAIT") {
       globals.setState(state);
-      // window.dispatchEvent(new CustomEvent("new_state", { detail: state }));
 
       // If controls have not been rendered yet, render control sets
       // TO DO: check for when controls are added/removed instead of checking for any controls
@@ -500,6 +505,20 @@ async function refreshState() {
     }
 
     bumpMainContentForBanners(); // default cleanup after modules
+
+    // Check for failback conditions; Attempt failback approx once every 8.3 minutes to allow the original host time to recover
+    if (failbackHost && Math.random() * 100 < 1) {
+      const queryParams = new URLSearchParams(window.location.search);
+      queryParams.delete("failback_host");
+      const origLocation = queryParams.size
+        ? `${failbackHost}?${queryParams.toString()}`
+        : failbackHost;
+      console.log("Attempting failback to ", origLocation);
+
+      if (await healthcheckHost(failbackHost)) {
+        location.replace(origLocation);
+      }
+    }
 
     // On OK statuses, continue refresh loop
     refresh = window.setTimeout(refreshState, REFRESH_WAIT);
@@ -674,6 +693,11 @@ window.addEventListener("load", async () => {
   // If either orchestrator or system is not set, show error message and stop processing
   if (!globals.getOrchestrator() || !globals.getSystem()) {
     return alert404();
+  }
+
+  // Check if this is a failed over client and failback is needed
+  if (queryParams.has("failback_host")) {
+    failbackHost = queryParams.get("failback_host");
   }
 
   // start refreshState loop

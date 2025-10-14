@@ -29,8 +29,9 @@ import { setVolumeSliderState } from "./controls/volume_slider.js";
 import "../css/styles.css";
 
 const REFRESH_WAIT = 5000;
+const MIN_FAILBACK_WAIT = 3 * 60 * 1000; // 3 minutes
+const MAX_FAILBACK_WAIT = 10 * 60 * 1000; // 10 minutes
 let refresh;
-let failbackHost;
 let nextAvailableTimer = 0;
 
 function clearDisplay() {
@@ -54,13 +55,52 @@ function alert404() {
   document.getElementById("message").classList.remove("hidden");
 }
 
-/***
- *
- *
+/*
  * Control set creation and update
- *
- *
  */
+function drawUI(config) {
+  clearDisplay();
+
+  // header
+  document.getElementById("room-name").innerHTML = config.system_name;
+  document.getElementById("room-header").classList.remove("hidden");
+
+  // main controls
+  if (config.control_sets) {
+    for (const controlSet in config.control_sets) {
+      let path = `{"control_sets":{"${controlSet}":{"controls":{"<id>":{"value":<value>}}}}}`;
+
+      // check for options
+      let options = { half_width: false, justify_content: false }; // defaults
+      if (config.control_sets[controlSet].display_options) {
+        for (let opt in config.control_sets[controlSet].display_options) {
+          options[opt] = config.control_sets[controlSet].display_options[opt];
+        }
+      }
+
+      setupControlSet(
+        controlSet,
+        config.control_sets[controlSet],
+        path,
+        "main-controls",
+      );
+    }
+  }
+
+  // render custom modals for advanced controls
+  if (config.modals) {
+    setupModals(config.modals, false);
+  }
+
+  // Add default state change events/listeners to linked power, display source, and video mute controls;
+  // also default links between audio mute and volume controls
+  setupControlLinks();
+
+  // Tell modules it's safe to attach custom listeners to controls
+  window.dispatchEvent(new Event("ui_ready"));
+  globals.setUIReady(true); // keeping this construct available as well, for modules that might load asynchronously
+}
+
 // Create base html for each control defined and inject into DOM
 // options -- { callback, half-width }
 function setupControlSet(
@@ -316,7 +356,96 @@ function setupControlSet(
   }
 }
 
-// system healing: make sure all stateful buttons reflect current orchestrator state
+// Add default state change events/listeners to linked power, display source, and video mute controls;
+// also default links between audio mute and volume controls
+function setupControlLinks() {
+  // Power buttons: Update linked inputs and linked video mutes on state change 
+  document.querySelectorAll(".power-button").forEach((powerBtn) => {
+    const channel = powerBtn.getAttribute("data-channel");
+    const linkedInputs = channel
+      ? document.querySelectorAll(
+          `.display-source-radio[data-channel="${channel}"] .radio-option`,
+        )
+      : false;
+    const linkedPauseButtons = channel
+      ? document.querySelectorAll(`.pause-button[data-channel="${channel}"]`)
+      : false;
+
+    if (linkedInputs) {
+      registerStateChangeEvent(
+        "power_updated",
+        powerBtn,
+        [...linkedInputs],
+        (e) => {
+          const linkedInput = e.currentTarget;
+          const currentState =
+            linkedInput.getAttribute("data-value") === "true" ? true : false;
+          setDisplaySourceOptionState(linkedInput, currentState);
+        },
+      );
+    }
+
+    if (linkedPauseButtons) {
+      registerStateChangeEvent(
+        "power_updated",
+        powerBtn,
+        [...linkedPauseButtons],
+        (e) => {
+          const linkedPause = e.currentTarget;
+          const currentState =
+            linkedPause.getAttribute("data-value") === "true" ? true : false;
+          setVideoMuteButtonState(linkedPause, currentState);
+        },
+      );
+    }
+  });
+
+  // Video mute buttons: Update linked inputs on state change
+  document.querySelectorAll(".pause-button").forEach((powerBtn) => {
+    const channel = powerBtn.getAttribute("data-channel");
+    const linkedInputs = channel
+      ? document.querySelectorAll(
+          `.display-source-radio[data-channel="${channel}"] .radio-option`,
+        )
+      : false;
+
+    if (linkedInputs) {
+      registerStateChangeEvent(
+        "video_mute_updated",
+        powerBtn,
+        [...linkedInputs],
+        (e) => {
+          const linkedInput = e.currentTarget;
+          const currentState =
+            linkedInput.getAttribute("data-value") === "true" ? true : false;
+          setDisplaySourceOptionState(linkedInput, currentState);
+        },
+      );
+    }
+  });
+
+  // Audio mute buttons: Update linked volume sliders
+  document.querySelectorAll(".mute").forEach((muteBtn) => {
+    const channel = muteBtn.getAttribute("data-channel");
+    const linkedVolume = channel
+      ? document.querySelectorAll(`.slider[data-channel="${channel}"]`)
+      : false;
+
+    if (linkedVolume) {
+      registerStateChangeEvent(
+        "mute_updated",
+        muteBtn,
+        [...linkedVolume],
+        (e) => {
+          const slider = e.currentTarget;
+          setVolumeSliderState(slider, slider.value);
+        },
+      );
+    }
+  });
+}
+
+// System healing: make sure all stateful buttons reflect current orchestrator state
 function updateAllControls(statusData) {
   let controls = document.querySelectorAll(".control");
 
@@ -419,11 +548,15 @@ function updateAllControls(statusData) {
   window.dispatchEvent(new CustomEvent("new_state", { detail: statusData }));
 }
 
+/*
+ * State polling
+ */
+// Pause main get state loop
 function pauseRefresh() {
   window.clearTimeout(refresh);
 }
 
-// main state healing loop
+// Main state healing loop
 async function refreshState() {
   // Pause refresh loop
   pauseRefresh();
@@ -506,160 +639,40 @@ async function refreshState() {
 
     bumpMainContentForBanners(); // default cleanup after modules
 
-    // Check for failback conditions; Attempt failback approx once every 8.3 minutes to allow the original host time to recover
-    if (failbackHost && Math.random() * 100 < 1) {
-      const queryParams = new URLSearchParams(window.location.search);
-      queryParams.delete("failback_host");
-      const origLocation = queryParams.size
-        ? `${failbackHost}?${queryParams.toString()}`
-        : failbackHost;
-      console.log("Attempting failback to ", origLocation);
-
-      if (await healthcheckHost(failbackHost)) {
-        location.replace(origLocation);
-      }
-    }
-
     // On OK statuses, continue refresh loop
     refresh = window.setTimeout(refreshState, REFRESH_WAIT);
   }
 }
 
+// Failback attempt loop
+function attemptFailback() {
+  // Pick a random back off time to allow original host to recover
+  const waitTime = Math.floor(
+    Math.random() * (MAX_FAILBACK_WAIT - MIN_FAILBACK_WAIT) + MIN_FAILBACK_WAIT,
+  );
+
+  // Reconstruct failback location without failback_host param
+  const queryParams = new URLSearchParams(window.location.search);
+  const origHost = queryParams.get("failback_host");
+  queryParams.delete("failback_host");
+  const origLocation = queryParams.size
+    ? `${origHost}?${queryParams.toString()}`
+    : origHost;
+  console.log(`Attempting failback to ${origLocation} in ${waitTime}ms`);
+
+  setTimeout(async () => {
+    if (await healthcheckHost(origHost)) {
+      location.replace(origLocation);
+    } else {
+      // Try again after another random back off period
+      attemptFailback();
+    }
+  }, waitTime);
+}
+
 /*
- * Add default state change events/listeners to linked power, display source, and video mute controls;
- * also default links between audio mute and volume controls
+ * Page load
  */
-function setupControlLinks() {
-  // Power buttons: Update linked inputs and linked video mutes on state change 
-  document.querySelectorAll(".power-button").forEach((powerBtn) => {
-    const channel = powerBtn.getAttribute("data-channel");
-    const linkedInputs = channel
-      ? document.querySelectorAll(
-          `.display-source-radio[data-channel="${channel}"] .radio-option`,
-        )
-      : false;
-    const linkedPauseButtons = channel
-      ? document.querySelectorAll(`.pause-button[data-channel="${channel}"]`)
-      : false;
-
-    if (linkedInputs) {
-      registerStateChangeEvent(
-        "power_updated",
-        powerBtn,
-        [...linkedInputs],
-        (e) => {
-          const linkedInput = e.currentTarget;
-          const currentState =
-            linkedInput.getAttribute("data-value") === "true" ? true : false;
-          setDisplaySourceOptionState(linkedInput, currentState);
-        },
-      );
-    }
-
-    if (linkedPauseButtons) {
-      registerStateChangeEvent(
-        "power_updated",
-        powerBtn,
-        [...linkedPauseButtons],
-        (e) => {
-          const linkedPause = e.currentTarget;
-          const currentState =
-            linkedPause.getAttribute("data-value") === "true" ? true : false;
-          setVideoMuteButtonState(linkedPause, currentState);
-        },
-      );
-    }
-  });
-
-  // Video mute buttons: Update linked inputs on state change
-  document.querySelectorAll(".pause-button").forEach((powerBtn) => {
-    const channel = powerBtn.getAttribute("data-channel");
-    const linkedInputs = channel
-      ? document.querySelectorAll(
-          `.display-source-radio[data-channel="${channel}"] .radio-option`,
-        )
-      : false;
-
-    if (linkedInputs) {
-      registerStateChangeEvent(
-        "video_mute_updated",
-        powerBtn,
-        [...linkedInputs],
-        (e) => {
-          const linkedInput = e.currentTarget;
-          const currentState =
-            linkedInput.getAttribute("data-value") === "true" ? true : false;
-          setDisplaySourceOptionState(linkedInput, currentState);
-        },
-      );
-    }
-  });
-
-  // Audio mute buttons: Update linked volume sliders
-  document.querySelectorAll(".mute").forEach((muteBtn) => {
-    const channel = muteBtn.getAttribute("data-channel");
-    const linkedVolume = channel
-      ? document.querySelectorAll(`.slider[data-channel="${channel}"]`)
-      : false;
-
-    if (linkedVolume) {
-      registerStateChangeEvent(
-        "mute_updated",
-        muteBtn,
-        [...linkedVolume],
-        (e) => {
-          const slider = e.currentTarget;
-          setVolumeSliderState(slider, slider.value);
-        },
-      );
-    }
-  });
-}
-
-function drawUI(config) {
-  clearDisplay();
-
-  // header
-  document.getElementById("room-name").innerHTML = config.system_name;
-  document.getElementById("room-header").classList.remove("hidden");
-
-  // main controls
-  if (config.control_sets) {
-    for (const controlSet in config.control_sets) {
-      let path = `{"control_sets":{"${controlSet}":{"controls":{"<id>":{"value":<value>}}}}}`;
-
-      // check for options
-      let options = { half_width: false, justify_content: false }; // defaults
-      if (config.control_sets[controlSet].display_options) {
-        for (let opt in config.control_sets[controlSet].display_options) {
-          options[opt] = config.control_sets[controlSet].display_options[opt];
-        }
-      }
-
-      setupControlSet(
-        controlSet,
-        config.control_sets[controlSet],
-        path,
-        "main-controls",
-      );
-    }
-  }
-
-  // render custom modals for advanced controls
-  if (config.modals) {
-    setupModals(config.modals, false);
-  }
-
-  // Add default state change events/listeners to linked power, display source, and video mute controls;
-  // also default links between audio mute and volume controls
-  setupControlLinks();
-
-  // Tell modules it's safe to attach custom listeners to controls
-  window.dispatchEvent(new Event("ui_ready"));
-  globals.setUIReady(true); // keeping this construct available as well, for modules that might load asynchronously
-}
-
-/* page load listener */
 window.addEventListener("load", async () => {
   // Check for home orchestrator from server config
   await fetch("/config")
@@ -697,7 +710,7 @@ window.addEventListener("load", async () => {
 
   // Check if this is a failed over client and failback is needed
   if (queryParams.has("failback_host")) {
-    failbackHost = queryParams.get("failback_host");
+    attemptFailback();
   }
 
   // start refreshState loop

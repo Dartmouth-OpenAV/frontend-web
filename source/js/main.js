@@ -52,7 +52,7 @@ function clearDisplay() {
 function alert404() {
   clearDisplay();
   document.getElementById("message").innerHTML =
-    "<p>System configuration not found.</p> <p>Make sure 'system' and 'orchestrator' URL parameters are set.</p>";
+    "<p>Please configure a default 'orchestrator' and 'system', or make sure to define them as URL parameters.</p>";
   document.getElementById("message").classList.remove("hidden");
 }
 
@@ -661,6 +661,14 @@ function attemptFailback() {
   const queryParams = new URLSearchParams(window.location.search);
   const origHost = queryParams.get("failback_host");
   queryParams.delete("failback_host");
+
+  // also check for failback_orchestrator param that needs to get converted to plain orchestrator param
+  if (queryParams.has("failback_orchestrator")) {
+    const origOrchestrator = queryParams.get("failback_orchestrator");
+    queryParams.delete("failback_orchestrator");
+    queryParams.set("orchestrator", origOrchestrator);
+  }
+
   const origLocation = queryParams.size
     ? `${origHost}?${queryParams.toString()}`
     : origHost;
@@ -684,16 +692,23 @@ window.addEventListener("load", async () => {
   await fetch("/config")
     .then((response) => response.json())
     .then((json) => {
-      globals.setHomeOrchestrator(json.orchestrator);
-      globals.setOrchestrator(json.orchestrator);
-      return json.orchestrator;
+      if (json.orchestrator) {
+        globals.setOrchestrator(json.orchestrator);
+      }
+      if (json.system) {
+        globals.setSystem(json.system);
+      }
     })
     .catch((err) => {
-      console.log("Could not get 'orchestrator' from server", err);
-      return null;
+      console.error("Error getting /config", err);
+      throwClientError(
+        `Error getting /config: ${err.reason?.stack}`,
+        "N4jBbg32XG",
+        3,
+      );
     });
 
-  // If orchestrator param set in URL, use this as current value (overwrite homeOrchestrator)
+  // If orchestrator param set in URL, overwrite any default orchestrator value already set
   const queryParams = new URLSearchParams(window.location.search);
   if (queryParams.has("orchestrator")) {
     let orchestrator = queryParams.get("orchestrator");
@@ -704,7 +719,7 @@ window.addEventListener("load", async () => {
     globals.setOrchestrator(orchestrator);
   }
 
-  // Set global system from query param
+  // If system param present, override any default system value already set
   if (queryParams.has("system")) {
     globals.setSystem(queryParams.get("system"));
   }

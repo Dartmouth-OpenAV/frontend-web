@@ -11,13 +11,13 @@ import {
   disableControl,
   countdownTimeoutId,
   useProgressBar,
+  throwClientError,
 } from "../../js/utilities.js";
 import {
   attachSharedModalListeners,
   openModal,
   closeModal,
 } from "../../js/modals.js";
-import { throwClientError } from "../../js/global_error_catching.js";
 import { globals } from "../../js/globals.js";
 import { handleDisplaySourceSelect } from "../../js/controls/display_source_radio.js";
 import { handleTogglePower } from "../../js/controls/power_button.js";

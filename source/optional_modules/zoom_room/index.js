@@ -144,6 +144,9 @@ function openManualJoinForm() {
   // re-attach form submit listener
   form.addEventListener("submit", handleManualJoinSubmit);
 
+  // make sure SIP toggle is on default value (Zoom)
+  toggleSIP();
+
   openModal(null, "manual-zoom-prompt");
 }
 
@@ -423,6 +426,31 @@ function handleZoomSharePromptClick(event) {
   selectZoomInput(event.currentTarget);
 }
 
+function toggleSIP(e = null) {
+  const label = document.querySelector(
+    "#manual-zoom-prompt label[for=meeting_id]",
+  );
+  const input = document.querySelector(
+    "#manual-zoom-prompt input[name=meeting_id]",
+  );
+  const activeButton = e
+    ? e.target
+    : document.querySelector("#sip-toggle button[value=zoom]");
+  if (e?.target.value === "sip") {
+    label.innerHTML = "SIP ID:";
+    input.setAttribute("inputmode", "text");
+  } else {
+    label.innerHTML = "Meeting ID:";
+    input.setAttribute("inputmode", "numeric");
+  }
+
+  input.focus();
+  activeButton.parentElement
+    .querySelector(".active")
+    .classList.remove("active");
+  activeButton.classList.add("active");
+}
+
 function initiateZoomGUI() {
   // make sure elements only get initialized once, and listeners only get attached if zoom_room configured
   if (globals.getState()?.zoom_room) {
@@ -592,9 +620,9 @@ function initiateZoomGUI() {
       });
 
     // Attach listeners for static SIP toggle buttons
-    // document.querySelectorAll("#sip-toggle button").forEach(function(button){
-    //   button.addEventListener("click", toggleSip);
-    // });
+    document.querySelectorAll("#sip-toggle button").forEach(function (button) {
+      button.addEventListener("click", toggleSIP);
+    });
 
     // Start listening for state changes from main
     window.addEventListener("new_state", displayZoomStatus);

@@ -6,6 +6,8 @@ import {
   registerStateChangeEvent,
 } from "../../js/utilities.js";
 import { attachSharedModalListeners, openModal } from "../../js/modals.js";
+import { handleDisplaySourceSelect } from "../../js/controls/display_source_radio.js";
+
 import banners from "./components/zoom_banners.html";
 import joinManualModal from "./components/join_manual_modal.html";
 import joinSuggestedModal from "./components/join_suggested_modal.html";
@@ -416,14 +418,18 @@ function displayZoomStatus(e) {
   // Check for camera and audio mute warnings
 }
 
-function handleZoomMeetingPromptClick(event) {
+function handleZoomMeetingPromptClick(e) {
   openZoomPrompt();
-  selectZoomInput(event.currentTarget);
+  // selectZoomInput(event.currentTarget); // This implementation created a race condition with the handleDisplaySourceSelect callback attached by main.js (JR 10/17/25)
+  e.target.setAttribute("data-zoom-last-selected", "");
+  handleDisplaySourceSelect(e);
 }
 
-function handleZoomSharePromptClick(event) {
+function handleZoomSharePromptClick(e) {
   openModal(null, "share-screen-zoom-prompt");
-  selectZoomInput(event.currentTarget);
+  // selectZoomInput(event.currentTarget); // This implementation created a race condition with the handleDisplaySourceSelect callback attached by main.js (JR 10/17/25)
+  e.target.setAttribute("data-zoom-last-selected", "");
+  handleDisplaySourceSelect(e);
 }
 
 function toggleSIP(e = null) {

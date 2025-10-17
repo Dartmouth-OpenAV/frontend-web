@@ -71,14 +71,6 @@ function drawUI(config) {
     for (const controlSet in config.control_sets) {
       let path = `{"control_sets":{"${controlSet}":{"controls":{"<id>":{"value":<value>}}}}}`;
 
-      // check for options
-      let options = { half_width: false, justify_content: false }; // defaults
-      if (config.control_sets[controlSet].display_options) {
-        for (let opt in config.control_sets[controlSet].display_options) {
-          options[opt] = config.control_sets[controlSet].display_options[opt];
-        }
-      }
-
       setupControlSet(
         controlSet,
         config.control_sets[controlSet],
@@ -103,14 +95,7 @@ function drawUI(config) {
 }
 
 // Create base html for each control defined and inject into DOM
-// options -- { callback, half-width }
-function setupControlSet(
-  controlSetId,
-  data,
-  path,
-  containerId,
-  options = { half_width: false, justify_content: false },
-) {
+function setupControlSet(controlSetId, data, path, containerId) {
   let icon = document.getElementById(`${data.icon}-icon-template`)
     ? document.getElementById(`${data.icon}-icon-template`).innerHTML
     : "";
@@ -130,11 +115,10 @@ function setupControlSet(
   const controlSet = container.lastElementChild;
 
   // add optional styling classes
-  if (options.half_width) {
-    controlSet.classList.add("half-width");
-  }
-  if (options.justify_content) {
-    controlSet.classList.add("justify-content");
+  if (data.display_options) {
+    for (const styleClass of data.display_options) {
+      controlSet.classList.add(styleClass);
+    }
   }
 
   // loop through data.controls and create button in the DOM for each, based on type

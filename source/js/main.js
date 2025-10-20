@@ -32,7 +32,7 @@ import "../css/styles.css";
 const REFRESH_WAIT = 5000;
 const MIN_FAILBACK_WAIT = 3 * 60 * 1000; // 3 minutes
 const MAX_FAILBACK_WAIT = 10 * 60 * 1000; // 10 minutes
-let refresh;
+let refresh, configHash;
 let nextAvailableTimer = 0;
 
 function clearDisplay() {
@@ -597,9 +597,12 @@ async function refreshState() {
     if (state !== "WAIT") {
       globals.setState(state);
 
-      // If controls have not been rendered yet, render control sets
-      // TO DO: check for when controls are added/removed instead of checking for any controls
-      if (!document.getElementById("main-controls").innerHTML) {
+      // On page load and config changes, redraw control sets
+      if (
+        state.config_hash !== configHash ||
+        !document.getElementById("main-controls").innerHTML
+      ) {
+        configHash = state.config_hash;
         drawUI(state);
       }
 

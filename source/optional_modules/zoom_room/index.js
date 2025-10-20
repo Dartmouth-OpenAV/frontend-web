@@ -162,35 +162,6 @@ function openLeaveZoomPrompt() {
   openModal(null, "leave-zoom-prompt");
 }
 
-// Open one of three prompts based on Zoom state:
-function openZoomPrompt() {
-  const meetingJoined =
-    zoomData.meeting?.status === "in_meeting" ? true : false;
-
-  // Suggested meeting join:
-  if (!meetingJoined && zoomData.suggested_meeting) {
-    // update modal text
-    const modal = document.getElementById("scheduled-zoom-prompt");
-    modal.querySelector(".meeting-name").textContent =
-      zoomData.suggested_meeting.name;
-
-    // re-attach submit listener
-    modal
-      .querySelector("button[name=join-suggested-meeting]")
-      .addEventListener("click", handleSuggestedJoinSubmit);
-
-    openModal(null, "scheduled-zoom-prompt");
-  }
-  // Manual meeting join:
-  else if (!meetingJoined) {
-    openManualJoinForm(); // using a global function instead of inline so that Suggested Meeting dismiss can run this routine
-  }
-  // Leave meeting prompt
-  else {
-    openLeaveZoomPrompt();
-  }
-}
-
 // Check for other Zoom inputs (eg. a Share Screen button) and set data-override
 // to true so they will not display as active
 function selectZoomInput(input, newSelection = false) {
@@ -438,7 +409,37 @@ function displayZoomStatus(e) {
 }
 
 function handleZoomMeetingPromptClick(e) {
-  openZoomPrompt();
+  // Open one of three prompts based on Zoom state:
+  const meetingJoined =
+    zoomData.meeting?.status === "in_meeting" ? true : false;
+
+  // Suggested meeting join:
+  if (!meetingJoined && zoomData.suggested_meeting) {
+    // update modal text
+    const modal = document.getElementById("scheduled-zoom-prompt");
+    modal.querySelector(".meeting-name").textContent =
+      zoomData.suggested_meeting.name;
+
+    // re-attach submit listener
+    modal
+      .querySelector("button[name=join-suggested-meeting]")
+      .addEventListener("click", handleSuggestedJoinSubmit);
+
+    openModal(null, "scheduled-zoom-prompt");
+  }
+  // Manual meeting join:
+  else if (!meetingJoined) {
+    openManualJoinForm(); // using a global function instead of inline so that Suggested Meeting dismiss can run this routine
+  }
+  // Leave meeting prompt (first check that the Zoom button is already selected; otherwise just do nothing)
+  else if (
+    e.currentTarget.getAttribute("data-value") === "true" &&
+    e.currentTarget.getAttribute("data-override") !== "true"
+  ) {
+    openLeaveZoomPrompt();
+  }
+
+  // Disambiguate with other Zoom inputs
   selectZoomInput(e.currentTarget, true);
 }
 

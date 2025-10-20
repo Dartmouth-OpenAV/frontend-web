@@ -162,7 +162,7 @@ const enqueue = (func, callback) => {
 
 // Wrapper function for PUTs to systems/{system}/state, to handle queueing and
 // pausing/resuming the main refreshStatus loop
-function updateStatus(payload, callback = null) {
+function updateStatus(payload, callback = null, userInput = true) {
   // make sure global orchestrator and system variables are set
   const orchestrator = globals.getOrchestrator();
   const system = globals.getSystem();
@@ -171,8 +171,8 @@ function updateStatus(payload, callback = null) {
   }
 
   // OK to proceed
-  // Add UI interaction if environment_sensing is present
-  if (globals.getState()?.environment_sensing) {
+  // Add UI interaction if environment_sensing is present and user input is true
+  if (globals.getState()?.environment_sensing && userInput === true) {
     let obj = JSON.parse(payload);
     obj["environment_sensing"] = {
       ui_interactions: { occupancy_detected: true },

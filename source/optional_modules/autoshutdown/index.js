@@ -150,7 +150,8 @@ function autoshutdown() {
 
     // update backend
     let payload = btn.getAttribute("data-path").replace(/<value>/, false);
-    updateStatus(payload, reset);
+    // pass false for userInput to avoid user interaction being logged
+    updateStatus(payload, reset, false);
   });
 
   // hide the modal

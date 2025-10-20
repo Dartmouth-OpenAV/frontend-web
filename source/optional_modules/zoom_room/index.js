@@ -6,7 +6,6 @@ import {
   registerStateChangeEvent,
 } from "../../js/utilities.js";
 import { attachSharedModalListeners, openModal } from "../../js/modals.js";
-import { handleDisplaySourceSelect } from "../../js/controls/display_source_radio.js";
 
 import banners from "./components/zoom_banners.html";
 import joinManualModal from "./components/join_manual_modal.html";
@@ -194,7 +193,7 @@ function openZoomPrompt() {
 
 // Check for other Zoom inputs (eg. a Share Screen button) and set data-override
 // to true so they will not display as active
-function selectZoomInput(input) {
+function selectZoomInput(input, newSelection = false) {
   // check if there is another Zoom input in the same radio
   const radioGroup = input.parentElement;
   const zoomOpts = radioGroup.querySelectorAll(
@@ -211,11 +210,31 @@ function selectZoomInput(input) {
       });
 
     // select the requested input
-    input.setAttribute("data-override", false);
     input.setAttribute("data-zoom-last-selected", "");
-    if (input.getAttribute("data-override") !== "true") {
-      input.classList.add("active");
+
+    // check for potential conflict with a linked power or video_mute button before applying data-override
+    if (newSelection) {
+      const channel = radioGroup.getAttribute("data-channel");
+      const linkedPower = document.querySelector(
+        `.power-button[data-channel=${channel}]`,
+      );
+      const linkedPause = document.querySelector(
+        `.pause-button[data-channel=${channel}]`,
+      );
+      if (
+        (!linkedPower || linkedPower.getAttribute("data-value") === "true") &&
+        (!linkedPause || linkedPause.getAttribute("data-value") !== "true")
+      ) {
+        input.setAttribute("data-override", false);
+      }
+    } else {
+      input.setAttribute("data-override", false);
     }
+  }
+
+  // finally, update visually
+  if (input.getAttribute("data-override") !== "true") {
+    input.classList.add("active");
   }
 }
 
@@ -420,16 +439,12 @@ function displayZoomStatus(e) {
 
 function handleZoomMeetingPromptClick(e) {
   openZoomPrompt();
-  // selectZoomInput(event.currentTarget); // This implementation created a race condition with the handleDisplaySourceSelect callback attached by main.js (JR 10/17/25)
-  e.target.setAttribute("data-zoom-last-selected", "");
-  handleDisplaySourceSelect(e);
+  selectZoomInput(e.currentTarget, true);
 }
 
 function handleZoomSharePromptClick(e) {
   openModal(null, "share-screen-zoom-prompt");
-  // selectZoomInput(event.currentTarget); // This implementation created a race condition with the handleDisplaySourceSelect callback attached by main.js (JR 10/17/25)
-  e.target.setAttribute("data-zoom-last-selected", "");
-  handleDisplaySourceSelect(e);
+  selectZoomInput(e.currentTarget, true);
 }
 
 function toggleSIP(e = null) {

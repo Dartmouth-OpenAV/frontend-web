@@ -190,7 +190,7 @@ function setupControlSet(controlSetId, data, path, containerId) {
         .replace(/{{muteState}}/g, data.controls[control].value)
         .replace(/{{otherAttributes}}/, otherAttributes);
     }
-    if (type === "volume") {
+    if (type === "volume" || type === "slider") {
       htmlBlob = document
         .getElementById("volume-control-template")
         .innerHTML.replace(/{{control_set}}/g, controlSetName)
@@ -349,7 +349,7 @@ function setupControlSet(controlSetId, data, path, containerId) {
 // Add default state change events/listeners to linked power, display source, and video mute controls;
 // also default links between audio mute and volume controls
 function setupControlLinks() {
-  // Power buttons: Update linked inputs and linked video mutes on state change 
+  // Power buttons: Update linked inputs and linked video mutes on state change
   document.querySelectorAll(".power-button").forEach((powerBtn) => {
     const channel = powerBtn.getAttribute("data-channel");
     const linkedInputs = channel
@@ -492,10 +492,11 @@ function updateAllControls(statusData) {
         setMuteButtonState(control, value);
       }
       // volume
-      if (type === "volume") {
+      if (type === "volume" || type === "slider") {
         // if linked mute has not already been evaluated/set, make sure slider still knows its mute state
         if (
-          control.getAttribute("data-channel") &&
+          control.getAttribute("data-channel") !== "" &&
+          control.getAttribute("data-channel") !== null &&
           document
             .querySelector(
               `.mute[data-channel=${control.getAttribute("data-channel")}]`,

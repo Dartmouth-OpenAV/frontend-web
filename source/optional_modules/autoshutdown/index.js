@@ -88,7 +88,9 @@ function checkForAutoshutdown() {
       openModal(null, "autoshutdown-warning");
 
       // Default action: shutdown after 600 seconds
-      countdown(autoshutdownWarningModal.querySelector(".counter"));
+      let countdownSpan = autoshutdownWarningModal.querySelector(".counter");
+      countdownSpan.textContent = autoshutdownWarningTime;
+      countdown(countdownSpan);
       var duration = autoshutdownWarningTime * 1000 + 100;
       autoshutdownTimeoutId = setTimeout(autoshutdown, duration);
     }

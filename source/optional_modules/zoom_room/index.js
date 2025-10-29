@@ -301,9 +301,10 @@ function displayZoomStatus(e) {
     });
 
   // Update banners
-  const meetingStatus = zoomData.meeting?.status
-    ? zoomData.meeting.status
-    : false;
+  const meetingStatus =
+    zoomData.meeting?.status && zoomData.meeting.info.meeting_type === "meeting"
+      ? zoomData.meeting.status
+      : false;
 
   const currentMeeting = zoomData.meeting?.info?.meeting_name
     ? zoomData.meeting.info.meeting_name

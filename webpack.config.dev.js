@@ -7,7 +7,7 @@ module.exports = {
   mode: 'development',
   entry: { 
     index: {
-      import: ['./source/js/globals.js','./source/js/main.js','./source/js/tech_modal.js','./source/optional_modules/zoom_room/index.js','./source/optional_modules/autoshutdown/index.js']
+      import: ['./source/js/globals.js','./source/js/main.js','./source/js/tech_modal.js','./source/optional_modules/zoom_room/index.js','./source/optional_modules/autoshutdown/index.js','./source/optional_modules/camera_integration/index.js']
     }
   },
   output: {

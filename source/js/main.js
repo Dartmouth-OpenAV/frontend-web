@@ -622,7 +622,10 @@ async function refreshState() {
       }
 
       // Check for recording mode
-      if (state.recording?.status) {
+      if (
+        state.recording?.status === true ||
+        state.recording?.status === "true"
+      ) {
         document
           .getElementById("recording-indicator")
           .classList.remove("hidden");

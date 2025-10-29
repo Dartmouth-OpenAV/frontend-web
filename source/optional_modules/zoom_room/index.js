@@ -87,18 +87,11 @@ function handleSuggestedJoinSubmit() {
     modal.classList.add("hidden");
   }
 
-  if (zoomData.suggested_meeting?.id && zoomData.suggested_meeting?.password) {
-    joinZoomMeeting(
-      zoomData.suggested_meeting.id,
-      zoomData.suggested_meeting.password,
-      reset,
-    );
-  } else {
-    console.error(
-      "Could not join suggested Zoom meeting; missing id or password",
-    );
-    reset();
-  }
+  joinZoomMeeting(
+    zoomData.suggested_meeting.id,
+    zoomData.suggested_meeting.password,
+    reset,
+  );
 }
 
 function handleManualJoinSubmit(e) {
@@ -414,7 +407,11 @@ function handleZoomMeetingPromptClick(e) {
     zoomData.meeting?.status === "in_meeting" ? true : false;
 
   // Suggested meeting join:
-  if (!meetingJoined && zoomData.suggested_meeting) {
+  if (
+    !meetingJoined &&
+    zoomData.suggested_meeting?.id &&
+    zoomData.suggested_meeting?.password
+  ) {
     // update modal text
     const modal = document.getElementById("scheduled-zoom-prompt");
     modal.querySelector(".meeting-name").textContent =

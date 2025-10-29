@@ -10,7 +10,7 @@ COPY nginx-server.conf /etc/nginx/custom-server.conf
 # Copy public files into www directory
 COPY public /usr/share/nginx/html
 
-# Set up entrypoint script (puts HOME_ORCHESTRATOR environment
+# Set up entrypoint script (puts DEFAULT_ORCHESTRATOR environment
 # variable into nginx conf, which needs to happen at run
 # time because we're setting env vars with Docker Compose)
 COPY start.sh /

@@ -32,7 +32,7 @@ import "../css/styles.css";
 const REFRESH_WAIT = 5000;
 const MIN_FAILBACK_WAIT = 3 * 60 * 1000; // 3 minutes
 const MAX_FAILBACK_WAIT = 10 * 60 * 1000; // 10 minutes
-let refresh;
+let refresh, configHash;
 let nextAvailableTimer = 0;
 
 function clearDisplay() {
@@ -52,7 +52,7 @@ function clearDisplay() {
 function alert404() {
   clearDisplay();
   document.getElementById("message").innerHTML =
-    "<p>System configuration not found.</p> <p>Make sure 'system' and 'orchestrator' URL parameters are set.</p>";
+    "<p>Please configure a default 'orchestrator' and 'system', or make sure to define them as URL parameters.</p>";
   document.getElementById("message").classList.remove("hidden");
 }
 
@@ -70,14 +70,6 @@ function drawUI(config) {
   if (config.control_sets) {
     for (const controlSet in config.control_sets) {
       let path = `{"control_sets":{"${controlSet}":{"controls":{"<id>":{"value":<value>}}}}}`;
-
-      // check for options
-      let options = { half_width: false, justify_content: false }; // defaults
-      if (config.control_sets[controlSet].display_options) {
-        for (let opt in config.control_sets[controlSet].display_options) {
-          options[opt] = config.control_sets[controlSet].display_options[opt];
-        }
-      }
 
       setupControlSet(
         controlSet,
@@ -103,14 +95,7 @@ function drawUI(config) {
 }
 
 // Create base html for each control defined and inject into DOM
-// options -- { callback, half-width }
-function setupControlSet(
-  controlSetId,
-  data,
-  path,
-  containerId,
-  options = { half_width: false, justify_content: false },
-) {
+function setupControlSet(controlSetId, data, path, containerId) {
   let icon = document.getElementById(`${data.icon}-icon-template`)
     ? document.getElementById(`${data.icon}-icon-template`).innerHTML
     : "";
@@ -130,11 +115,10 @@ function setupControlSet(
   const controlSet = container.lastElementChild;
 
   // add optional styling classes
-  if (options.half_width) {
-    controlSet.classList.add("half-width");
-  }
-  if (options.justify_content) {
-    controlSet.classList.add("justify-content");
+  if (data.display_options) {
+    for (const styleClass of data.display_options) {
+      controlSet.classList.add(styleClass);
+    }
   }
 
   // loop through data.controls and create button in the DOM for each, based on type
@@ -206,7 +190,7 @@ function setupControlSet(
         .replace(/{{muteState}}/g, data.controls[control].value)
         .replace(/{{otherAttributes}}/, otherAttributes);
     }
-    if (type === "volume") {
+    if (type === "volume" || type === "slider") {
       htmlBlob = document
         .getElementById("volume-control-template")
         .innerHTML.replace(/{{control_set}}/g, controlSetName)
@@ -365,7 +349,7 @@ function setupControlSet(
 // Add default state change events/listeners to linked power, display source, and video mute controls;
 // also default links between audio mute and volume controls
 function setupControlLinks() {
-  // Power buttons: Update linked inputs and linked video mutes on state change 
+  // Power buttons: Update linked inputs and linked video mutes on state change
   document.querySelectorAll(".power-button").forEach((powerBtn) => {
     const channel = powerBtn.getAttribute("data-channel");
     const linkedInputs = channel
@@ -508,10 +492,11 @@ function updateAllControls(statusData) {
         setMuteButtonState(control, value);
       }
       // volume
-      if (type === "volume") {
+      if (type === "volume" || type === "slider") {
         // if linked mute has not already been evaluated/set, make sure slider still knows its mute state
         if (
-          control.getAttribute("data-channel") &&
+          control.getAttribute("data-channel") !== "" &&
+          control.getAttribute("data-channel") !== null &&
           document
             .querySelector(
               `.mute[data-channel=${control.getAttribute("data-channel")}]`,
@@ -613,9 +598,12 @@ async function refreshState() {
     if (state !== "WAIT") {
       globals.setState(state);
 
-      // If controls have not been rendered yet, render control sets
-      // TO DO: check for when controls are added/removed instead of checking for any controls
-      if (!document.getElementById("main-controls").innerHTML) {
+      // On page load and config changes, redraw control sets
+      if (
+        state.config_hash !== configHash ||
+        !document.getElementById("main-controls").innerHTML
+      ) {
+        configHash = state.config_hash;
         drawUI(state);
       }
 
@@ -661,6 +649,14 @@ function attemptFailback() {
   const queryParams = new URLSearchParams(window.location.search);
   const origHost = queryParams.get("failback_host");
   queryParams.delete("failback_host");
+
+  // also check for failback_orchestrator param that needs to get converted to plain orchestrator param
+  if (queryParams.has("failback_orchestrator")) {
+    const origOrchestrator = queryParams.get("failback_orchestrator");
+    queryParams.delete("failback_orchestrator");
+    queryParams.set("orchestrator", origOrchestrator);
+  }
+
   const origLocation = queryParams.size
     ? `${origHost}?${queryParams.toString()}`
     : origHost;
@@ -684,16 +680,23 @@ window.addEventListener("load", async () => {
   await fetch("/config")
     .then((response) => response.json())
     .then((json) => {
-      globals.setHomeOrchestrator(json.orchestrator);
-      globals.setOrchestrator(json.orchestrator);
-      return json.orchestrator;
+      if (json.orchestrator) {
+        globals.setOrchestrator(json.orchestrator);
+      }
+      if (json.system) {
+        globals.setSystem(json.system);
+      }
     })
     .catch((err) => {
-      console.log("Could not get 'orchestrator' from server", err);
-      return null;
+      console.error("Error getting /config", err);
+      throwClientError(
+        `Error getting /config: ${err.reason?.stack}`,
+        "N4jBbg32XG",
+        3,
+      );
     });
 
-  // If orchestrator param set in URL, use this as current value (overwrite homeOrchestrator)
+  // If orchestrator param set in URL, overwrite any default orchestrator value already set
   const queryParams = new URLSearchParams(window.location.search);
   if (queryParams.has("orchestrator")) {
     let orchestrator = queryParams.get("orchestrator");
@@ -704,7 +707,7 @@ window.addEventListener("load", async () => {
     globals.setOrchestrator(orchestrator);
   }
 
-  // Set global system from query param
+  // If system param present, override any default system value already set
   if (queryParams.has("system")) {
     globals.setSystem(queryParams.get("system"));
   }

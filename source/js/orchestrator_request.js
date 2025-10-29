@@ -81,12 +81,21 @@ async function failover() {
       if (await healthcheckHost(host)) {
         // good to go, don't have to worry about breaking and closing other connections etc
         // because we're about to reload at a different URL
-        let newLocation = `${host}${window.location.search}`;
 
-        // Add failback_host if this is not already failed over from another system
-        if (!window.location.search.includes("failback_host=")) {
-          newLocation += newLocation.includes("?") ? `&failback_host=${location.origin}` : `?failback_host=${location.origin}`;
+        // first check for orchestrator param and convert to failback_orchestrator
+        const queryParams = new URLSearchParams(window.location.search);
+        if (queryParams.has("orchestrator")) {
+          const origOrchestrator = queryParams.get("orchestrator");
+          queryParams.delete("orchestrator");
+          queryParams.set("failback_orchestrator", origOrchestrator);
         }
+
+        // also make sure failback_host is set if this is not already failed over
+        if (!queryParams.has("failback_host")) {
+          queryParams.set("failback_host", location.origin);
+        }
+
+        let newLocation = `${host}?${queryParams.toString()}`;
         console.log("Failing over to ", newLocation);
         location.replace(newLocation);
       }

@@ -74,22 +74,11 @@ function setupModals(modals) {
       for (const controlSet in modals[modal].control_sets) {
         const path = `{"modals":{"${modal}":{"control_sets":{"${controlSet}":{"controls":{"<id>":{"value":<value>}}}}}}}`;
 
-        // check for options
-        let options = { half_width: false, justify_content: false }; // defaults
-        if (modals[modal].control_sets[controlSet].display_options) {
-          for (let opt in modals[modal].control_sets[controlSet]
-            .display_options) {
-            options[opt] =
-              modals[modal].control_sets[controlSet].display_options[opt];
-          }
-        }
-
         setupControlSet(
           controlSet,
           modals[modal].control_sets[controlSet],
           path,
           `${modal}-content`,
-          options,
         );
       }
     }

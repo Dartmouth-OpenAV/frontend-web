@@ -6,6 +6,7 @@ import {
   registerStateChangeEvent,
 } from "../../js/utilities.js";
 import { attachSharedModalListeners, openModal } from "../../js/modals.js";
+
 import banners from "./components/zoom_banners.html";
 import joinManualModal from "./components/join_manual_modal.html";
 import joinSuggestedModal from "./components/join_suggested_modal.html";
@@ -144,6 +145,9 @@ function openManualJoinForm() {
   // re-attach form submit listener
   form.addEventListener("submit", handleManualJoinSubmit);
 
+  // make sure SIP toggle is on default value (Zoom)
+  toggleSIP();
+
   openModal(null, "manual-zoom-prompt");
 }
 
@@ -158,38 +162,9 @@ function openLeaveZoomPrompt() {
   openModal(null, "leave-zoom-prompt");
 }
 
-// Open one of three prompts based on Zoom state:
-function openZoomPrompt() {
-  const meetingJoined =
-    zoomData.meeting?.status === "in_meeting" ? true : false;
-
-  // Suggested meeting join:
-  if (!meetingJoined && zoomData.suggested_meeting) {
-    // update modal text
-    const modal = document.getElementById("scheduled-zoom-prompt");
-    modal.querySelector(".meeting-name").textContent =
-      zoomData.suggested_meeting.name;
-
-    // re-attach submit listener
-    modal
-      .querySelector("button[name=join-suggested-meeting]")
-      .addEventListener("click", handleSuggestedJoinSubmit);
-
-    openModal(null, "scheduled-zoom-prompt");
-  }
-  // Manual meeting join:
-  else if (!meetingJoined) {
-    openManualJoinForm(); // using a global function instead of inline so that Suggested Meeting dismiss can run this routine
-  }
-  // Leave meeting prompt
-  else {
-    openLeaveZoomPrompt();
-  }
-}
-
 // Check for other Zoom inputs (eg. a Share Screen button) and set data-override
 // to true so they will not display as active
-function selectZoomInput(input) {
+function selectZoomInput(input, newSelection = false) {
   // check if there is another Zoom input in the same radio
   const radioGroup = input.parentElement;
   const zoomOpts = radioGroup.querySelectorAll(
@@ -206,11 +181,31 @@ function selectZoomInput(input) {
       });
 
     // select the requested input
-    input.setAttribute("data-override", false);
     input.setAttribute("data-zoom-last-selected", "");
-    if (input.getAttribute("data-override") !== "true") {
-      input.classList.add("active");
+
+    // check for potential conflict with a linked power or video_mute button before applying data-override
+    if (newSelection) {
+      const channel = radioGroup.getAttribute("data-channel");
+      const linkedPower = document.querySelector(
+        `.power-button[data-channel=${channel}]`,
+      );
+      const linkedPause = document.querySelector(
+        `.pause-button[data-channel=${channel}]`,
+      );
+      if (
+        (!linkedPower || linkedPower.getAttribute("data-value") === "true") &&
+        (!linkedPause || linkedPause.getAttribute("data-value") !== "true")
+      ) {
+        input.setAttribute("data-override", false);
+      }
+    } else {
+      input.setAttribute("data-override", false);
     }
+  }
+
+  // finally, update visually
+  if (input.getAttribute("data-override") !== "true") {
+    input.classList.add("active");
   }
 }
 
@@ -413,14 +408,69 @@ function displayZoomStatus(e) {
   // Check for camera and audio mute warnings
 }
 
-function handleZoomMeetingPromptClick(event) {
-  openZoomPrompt();
-  selectZoomInput(event.currentTarget);
+function handleZoomMeetingPromptClick(e) {
+  // Open one of three prompts based on Zoom state:
+  const meetingJoined =
+    zoomData.meeting?.status === "in_meeting" ? true : false;
+
+  // Suggested meeting join:
+  if (!meetingJoined && zoomData.suggested_meeting) {
+    // update modal text
+    const modal = document.getElementById("scheduled-zoom-prompt");
+    modal.querySelector(".meeting-name").textContent =
+      zoomData.suggested_meeting.name;
+
+    // re-attach submit listener
+    modal
+      .querySelector("button[name=join-suggested-meeting]")
+      .addEventListener("click", handleSuggestedJoinSubmit);
+
+    openModal(null, "scheduled-zoom-prompt");
+  }
+  // Manual meeting join:
+  else if (!meetingJoined) {
+    openManualJoinForm(); // using a global function instead of inline so that Suggested Meeting dismiss can run this routine
+  }
+  // Leave meeting prompt (first check that the Zoom button is already selected; otherwise just do nothing)
+  else if (
+    e.currentTarget.getAttribute("data-value") === "true" &&
+    e.currentTarget.getAttribute("data-override") !== "true"
+  ) {
+    openLeaveZoomPrompt();
+  }
+
+  // Disambiguate with other Zoom inputs
+  selectZoomInput(e.currentTarget, true);
 }
 
-function handleZoomSharePromptClick(event) {
+function handleZoomSharePromptClick(e) {
   openModal(null, "share-screen-zoom-prompt");
-  selectZoomInput(event.currentTarget);
+  selectZoomInput(e.currentTarget, true);
+}
+
+function toggleSIP(e = null) {
+  const label = document.querySelector(
+    "#manual-zoom-prompt label[for=meeting_id]",
+  );
+  const input = document.querySelector(
+    "#manual-zoom-prompt input[name=meeting_id]",
+  );
+  const activeButton = e
+    ? e.target
+    : document.querySelector("#sip-toggle button[value=zoom]");
+  if (e?.target.value === "sip") {
+    label.innerHTML = "SIP ID:";
+    input.setAttribute("inputmode", "text");
+  } else {
+    label.innerHTML = "Meeting ID:";
+    input.setAttribute("inputmode", "numeric");
+  }
+
+  input.focus();
+  activeButton.parentElement
+    .querySelector(".active")
+    .classList.remove("active");
+  activeButton.classList.add("active");
 }
 
 function initiateZoomGUI() {
@@ -592,9 +642,9 @@ function initiateZoomGUI() {
       });
 
     // Attach listeners for static SIP toggle buttons
-    // document.querySelectorAll("#sip-toggle button").forEach(function(button){
-    //   button.addEventListener("click", toggleSip);
-    // });
+    document.querySelectorAll("#sip-toggle button").forEach(function (button) {
+      button.addEventListener("click", toggleSIP);
+    });
 
     // Start listening for state changes from main
     window.addEventListener("new_state", displayZoomStatus);

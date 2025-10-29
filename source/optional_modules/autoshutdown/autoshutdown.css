@@ -1,0 +1,32 @@
+#autoshutdown-warning {
+  background-color: var(--theme-color);
+  color: #fff;
+}
+#autoshutdown-warning .shape {
+  fill: #fff;
+  stroke: #fff;
+}
+#autoshutdown-warning button {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+#autoshutdown-warning button.focus, #autoshutdown-warning button.active {
+  background-color: #fff;
+}
+#autoshutdown-warning button.focus .button-label, #autoshutdown-warning button.active .button-label {
+  color: #9500d2;
+}
+#autoshutdown-warning button.disabled {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+#autoshutdown-warning button.disabled .button-label {
+  color: #9103cc;
+}
+#autoshutdown-warning button.active.disabled {
+  background-color: #cccccc;
+}
+#autoshutdown-warning button.active.disabled .button-label {
+  color: var(--disabled-element);
+}
+#autoshutdown-warning.hidden {
+  display: none;
+}

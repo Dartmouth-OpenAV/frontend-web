@@ -1,11 +1,15 @@
 // Import all required modules
 import { globals } from "./globals.js";
-import { orchestratorRequest } from "./orchestrator_request.js";
+import {
+  orchestratorRequest,
+  healthcheckHost,
+} from "./orchestrator_request.js";
 import { openModal, setupModals } from "./modals.js";
 import {
   followPath,
   bumpMainContentForBanners,
   registerStateChangeEvent,
+  throwClientError,
 } from "./utilities.js";
 import {
   handlePanTiltZoom,
@@ -26,8 +30,9 @@ import { setVolumeSliderState } from "./controls/volume_slider.js";
 import "../css/styles.css";
 
 const REFRESH_WAIT = 5000;
-let refresh;
-
+const MIN_FAILBACK_WAIT = 3 * 60 * 1000; // 3 minutes
+const MAX_FAILBACK_WAIT = 10 * 60 * 1000; // 10 minutes
+let refresh, configHash;
 let nextAvailableTimer = 0;
 
 function clearDisplay() {
@@ -47,26 +52,50 @@ function clearDisplay() {
 function alert404() {
   clearDisplay();
   document.getElementById("message").innerHTML =
-    "<p>System configuration not found.</p> <p>Make sure 'system' and 'orchestrator' URL parameters are set.</p>";
+    "<p>Please configure a default 'orchestrator' and 'system', or make sure to define them as URL parameters.</p>";
   document.getElementById("message").classList.remove("hidden");
 }
 
-/***
- *
- *
+/*
  * Control set creation and update
- *
- *
  */
+function drawUI(config) {
+  clearDisplay();
+
+  // header
+  document.getElementById("room-name").innerHTML = config.system_name;
+  document.getElementById("room-header").classList.remove("hidden");
+
+  // main controls
+  if (config.control_sets) {
+    for (const controlSet in config.control_sets) {
+      let path = `{"control_sets":{"${controlSet}":{"controls":{"<id>":{"value":<value>}}}}}`;
+
+      setupControlSet(
+        controlSet,
+        config.control_sets[controlSet],
+        path,
+        "main-controls",
+      );
+    }
+  }
+
+  // render custom modals for advanced controls
+  if (config.modals) {
+    setupModals(config.modals, false);
+  }
+
+  // Add default state change events/listeners to linked power, display source, and video mute controls;
+  // also default links between audio mute and volume controls
+  setupControlLinks();
+
+  // Tell modules it's safe to attach custom listeners to controls
+  window.dispatchEvent(new Event("ui_ready"));
+  globals.setUIReady(true); // keeping this construct available as well, for modules that might load asynchronously
+}
+
 // Create base html for each control defined and inject into DOM
-// options -- { callback, half-width }
-function setupControlSet(
-  controlSetId,
-  data,
-  path,
-  containerId,
-  options = { half_width: false, justify_content: false },
-) {
+function setupControlSet(controlSetId, data, path, containerId) {
   let icon = document.getElementById(`${data.icon}-icon-template`)
     ? document.getElementById(`${data.icon}-icon-template`).innerHTML
     : "";
@@ -86,11 +115,10 @@ function setupControlSet(
   const controlSet = container.lastElementChild;
 
   // add optional styling classes
-  if (options.half_width) {
-    controlSet.classList.add("half-width");
-  }
-  if (options.justify_content) {
-    controlSet.classList.add("justify-content");
+  if (data.display_options) {
+    for (const styleClass of data.display_options) {
+      controlSet.classList.add(styleClass);
+    }
   }
 
   // loop through data.controls and create button in the DOM for each, based on type
@@ -98,6 +126,11 @@ function setupControlSet(
     const type = data.controls[control]?.type;
     if (!type) {
       console.error("No type specified for " + control);
+      throwClientError(
+        `Misconfigured control (no "type"): ${control}`,
+        "7qujwwHiGMDN",
+        3,
+      );
     }
 
     const pathAttr = path.replace(/<id>/g, control);
@@ -157,7 +190,7 @@ function setupControlSet(
         .replace(/{{muteState}}/g, data.controls[control].value)
         .replace(/{{otherAttributes}}/, otherAttributes);
     }
-    if (type === "volume") {
+    if (type === "volume" || type === "slider") {
       htmlBlob = document
         .getElementById("volume-control-template")
         .innerHTML.replace(/{{control_set}}/g, controlSetName)
@@ -313,205 +346,10 @@ function setupControlSet(
   }
 }
 
-// system healing: make sure all stateful buttons reflect current orchestrator state
-function updateAllControls(statusData) {
-  let controls = document.querySelectorAll(".control");
-
-  controls.forEach((control) => {
-    let type, value, parentObject;
-    // skip modal_launcher buttons
-    if (!control.getAttribute("data-modal")) {
-      const path = control.getAttribute("data-path");
-      const pathAsObj = JSON.parse(path.replace(/<value>/, '""'));
-      ({ value, parentObject } = followPath(pathAsObj, statusData));
-      type = parentObject.type;
-    } else {
-      type = "modal_launcher";
-    }
-
-    /* set up button based on type */
-    if (type || value.value?.type) {
-      /* stateless controls (just need handlers attached) */
-      // stateless_mute
-      if (type === "stateless_mute") {
-        control.addEventListener("click", handleDefaultButton);
-        control.addEventListener("touchstart", handleDefaultButton);
-      }
-      // stateless_volume
-      if (type === "stateless_volume") {
-        control.querySelectorAll("button").forEach((btn) => {
-          btn.addEventListener("click", handleDefaultButton);
-          btn.addEventListener("touchstart", handleDefaultButton);
-        });
-      }
-      // pan_tilt and camera_zoom (ptz)
-      if (type === "pan_tilt" || type === "camera_zoom") {
-        control.querySelectorAll("button").forEach((btn) => {
-          btn.addEventListener("mousedown", handlePanTiltZoom);
-          btn.addEventListener("touchstart", handlePanTiltZoom);
-
-          btn.addEventListener("mouseup", handlePanTiltZoomStop);
-          btn.addEventListener("touchend", handlePanTiltZoomStop);
-        });
-      }
-      // modal_launcher
-      if (type === "modal_launcher") {
-        control.addEventListener("click", openModal);
-        control.addEventListener("touchstart", openModal);
-      }
-
-      /* stateful controls */
-      // generic_toggle
-      if (type === "generic_toggle") {
-        setButtonState(control, value, handleToggleButton);
-      }
-      // mute
-      if (type === "mute") {
-        setMuteButtonState(control, value);
-      }
-      // volume
-      if (type === "volume") {
-        // if linked mute has not already been evaluated/set, make sure slider still knows its mute state
-        if (
-          control.getAttribute("data-channel") &&
-          document
-            .querySelector(
-              `.mute[data-channel=${control.getAttribute("data-channel")}]`,
-            )
-            .getAttribute("data-value") === "true"
-        ) {
-          control.setAttribute("data-muted", true);
-        }
-        setVolumeSliderState(control, value);
-      }
-      // power
-      if (type === "power") {
-        setButtonState(control, value, handleTogglePower);
-      }
-      // video mute
-      if (type === "video_mute") {
-        setVideoMuteButtonState(control, value);
-      }
-      // radio types: radio (generic), display_source_radio (previously input_select), camera_preset_radio
-      if (
-        type === "radio" ||
-        type === "camera_preset_radio" ||
-        type === "display_source_radio" ||
-        type === "input_select"
-      ) {
-        control.querySelectorAll(".radio-option").forEach((option) => {
-          const optionID = option.getAttribute("data-option");
-          const optionState = value[optionID].value;
-          if (type === "display_source_radio" || type === "input_select") {
-            setDisplaySourceOptionState(option, optionState);
-          } else {
-            setButtonState(option, optionState, handleRadioSelect);
-          }
-        });
-      }
-    }
-  });
-
-  // Signal to subscribed modules that new state/ui is ready
-  window.dispatchEvent(new CustomEvent("new_state", { detail: statusData }));
-}
-
-function pauseRefresh() {
-  window.clearTimeout(refresh);
-}
-
-// main state healing loop
-async function refreshState() {
-  // Pause refresh loop
-  pauseRefresh();
-
-  if (!globals.getOrchestrator() || !globals.getSystem()) {
-    alert404();
-    return null;
-  }
-
-  // Request state from orchestrator
-  const state = await orchestratorRequest(
-    `${globals.getOrchestrator()}/api/systems/${globals.getSystem()}/state`,
-  ).then(async (response) => {
-    // Do not continue the refresh loop on non-OK responses
-    // Add user feedback in case of 404
-    if (response.status === 404) {
-      clearDisplay();
-      document.getElementById("message").innerHTML =
-        "<p>Could not find system</p>";
-      document.getElementById("message").classList.remove("hidden");
-      return false;
-    }
-    // catch all other non-200 responses (shouldn't get here)
-    if (!response.ok) {
-      return false;
-    }
-    // Handle special 204 response: Continue refresh loop but don't render UI
-    if (response.status === 204) {
-      clearDisplay();
-      document.getElementById("message").innerHTML =
-        response.status === 204
-          ? "<p>System initializing ...</p>"
-          : "<p>Could not find system</p>";
-      document.getElementById("message").classList.remove("hidden");
-      return "WAIT";
-    }
-
-    // 200 response, should have json body
-    return await response.json();
-  });
-
-  if (state) {
-    // Set global state and render UI
-    // exclude 204s
-    if (state !== "WAIT") {
-      globals.setState(state);
-      // window.dispatchEvent(new CustomEvent("new_state", { detail: state }));
-
-      // If controls have not been rendered yet, render control sets
-      // TO DO: check for when controls are added/removed instead of checking for any controls
-      if (!document.getElementById("main-controls").innerHTML) {
-        drawUI(state);
-      }
-
-      // Attach listeners and set state on controls
-      updateAllControls(state);
-
-      // Check for maintenance mode
-      if (state.maintenance_mode) {
-        document
-          .getElementById("maintenance-mode-warning")
-          .classList.remove("hidden");
-      } else {
-        document
-          .getElementById("maintenance-mode-warning")
-          .classList.add("hidden");
-      }
-
-      // Check for recording mode
-      if (state.recording?.status) {
-        document
-          .getElementById("recording-indicator")
-          .classList.remove("hidden");
-      } else {
-        document.getElementById("recording-indicator").classList.add("hidden");
-      }
-    }
-
-    bumpMainContentForBanners(); // default cleanup after modules
-
-    // On OK statuses, continue refresh loop
-    refresh = window.setTimeout(refreshState, REFRESH_WAIT);
-  }
-}
-
-/*
- * Add default state change events/listeners to linked power, display source, and video mute controls;
- * also default links between audio mute and volume controls
- */
+// Add default state change events/listeners to linked power, display source, and video mute controls;
+// also default links between audio mute and volume controls
 function setupControlLinks() {
-  // Power buttons: Update linked inputs and linked video mutes on state change 
+  // Power buttons: Update linked inputs and linked video mutes on state change
   document.querySelectorAll(".power-button").forEach((powerBtn) => {
     const channel = powerBtn.getAttribute("data-channel");
     const linkedInputs = channel
@@ -597,65 +435,268 @@ function setupControlLinks() {
   });
 }
 
-function drawUI(config) {
-  clearDisplay();
+// System healing: make sure all stateful buttons reflect current orchestrator state
+function updateAllControls(statusData) {
+  let controls = document.querySelectorAll(".control");
 
-  // header
-  document.getElementById("room-name").innerHTML = config.system_name;
-  document.getElementById("room-header").classList.remove("hidden");
+  controls.forEach((control) => {
+    let type, value, parentObject;
+    // skip modal_launcher buttons
+    if (!control.getAttribute("data-modal")) {
+      const path = control.getAttribute("data-path");
+      const pathAsObj = JSON.parse(path.replace(/<value>/, '""'));
+      ({ value, parentObject } = followPath(pathAsObj, statusData));
+      type = parentObject.type;
+    } else {
+      type = "modal_launcher";
+    }
 
-  // main controls
-  if (config.control_sets) {
-    for (const controlSet in config.control_sets) {
-      let path = `{"control_sets":{"${controlSet}":{"controls":{"<id>":{"value":<value>}}}}}`;
+    /* set up button based on type */
+    if (type || value.value?.type) {
+      /* stateless controls (just need handlers attached) */
+      // stateless_mute
+      if (type === "stateless_mute") {
+        control.addEventListener("click", handleDefaultButton);
+        control.addEventListener("touchstart", handleDefaultButton);
+      }
+      // stateless_volume
+      if (type === "stateless_volume") {
+        control.querySelectorAll("button").forEach((btn) => {
+          btn.addEventListener("click", handleDefaultButton);
+          btn.addEventListener("touchstart", handleDefaultButton);
+        });
+      }
+      // pan_tilt and camera_zoom (ptz)
+      if (type === "pan_tilt" || type === "camera_zoom") {
+        control.querySelectorAll("button").forEach((btn) => {
+          btn.addEventListener("mousedown", handlePanTiltZoom);
+          btn.addEventListener("touchstart", handlePanTiltZoom);
 
-      // check for options
-      let options = { half_width: false, justify_content: false }; // defaults
-      if (config.control_sets[controlSet].display_options) {
-        for (let opt in config.control_sets[controlSet].display_options) {
-          options[opt] = config.control_sets[controlSet].display_options[opt];
-        }
+          btn.addEventListener("mouseup", handlePanTiltZoomStop);
+          btn.addEventListener("touchend", handlePanTiltZoomStop);
+        });
+      }
+      // modal_launcher
+      if (type === "modal_launcher") {
+        control.addEventListener("click", openModal);
+        control.addEventListener("touchstart", openModal);
       }
 
-      setupControlSet(
-        controlSet,
-        config.control_sets[controlSet],
-        path,
-        "main-controls",
-      );
+      /* stateful controls */
+      // generic_toggle
+      if (type === "generic_toggle") {
+        setButtonState(control, value, handleToggleButton);
+      }
+      // mute
+      if (type === "mute") {
+        setMuteButtonState(control, value);
+      }
+      // volume
+      if (type === "volume" || type === "slider") {
+        // if linked mute has not already been evaluated/set, make sure slider still knows its mute state
+        if (
+          control.getAttribute("data-channel") !== "" &&
+          control.getAttribute("data-channel") !== null &&
+          document
+            .querySelector(
+              `.mute[data-channel=${control.getAttribute("data-channel")}]`,
+            )
+            .getAttribute("data-value") === "true"
+        ) {
+          control.setAttribute("data-muted", true);
+        }
+        setVolumeSliderState(control, value);
+      }
+      // power
+      if (type === "power") {
+        setButtonState(control, value, handleTogglePower);
+      }
+      // video mute
+      if (type === "video_mute") {
+        setVideoMuteButtonState(control, value);
+      }
+      // radio types: radio (generic), display_source_radio (previously input_select), camera_preset_radio
+      if (
+        type === "radio" ||
+        type === "camera_preset_radio" ||
+        type === "display_source_radio" ||
+        type === "input_select"
+      ) {
+        control.querySelectorAll(".radio-option").forEach((option) => {
+          const optionID = option.getAttribute("data-option");
+          const optionState = value[optionID].value;
+          if (type === "display_source_radio" || type === "input_select") {
+            setDisplaySourceOptionState(option, optionState);
+          } else {
+            setButtonState(option, optionState, handleRadioSelect);
+          }
+        });
+      }
     }
-  }
+  });
 
-  // render custom modals for advanced controls
-  if (config.modals) {
-    setupModals(config.modals, false);
-  }
-
-  // Add default state change events/listeners to linked power, display source, and video mute controls;
-  // also default links between audio mute and volume controls
-  setupControlLinks();
-
-  // Tell modules it's safe to attach custom listeners to controls
-  window.dispatchEvent(new Event("ui_ready"));
-  globals.setUIReady(true); // keeping this construct available as well, for modules that might load asynchronously
+  // Signal to subscribed modules that new state/ui is ready
+  window.dispatchEvent(new CustomEvent("new_state", { detail: statusData }));
 }
 
-/* page load listener */
+/*
+ * State polling
+ */
+// Pause main get state loop
+function pauseRefresh() {
+  window.clearTimeout(refresh);
+}
+
+// Main state healing loop
+async function refreshState() {
+  // Pause refresh loop
+  pauseRefresh();
+
+  const orchestrator = globals.getOrchestrator();
+  const system = globals.getSystem();
+
+  if (!orchestrator || !system) {
+    alert404();
+    return null;
+  }
+
+  // Request state from orchestrator
+  const state = await orchestratorRequest(
+    `${orchestrator}/api/systems/${system}/state`,
+  ).then(async (response) => {
+    // Do not continue the refresh loop on non-OK responses
+    // Add user feedback in case of 404
+    if (response.status === 404) {
+      clearDisplay();
+      document.getElementById("message").innerHTML =
+        "<p>Could not find system</p>";
+      document.getElementById("message").classList.remove("hidden");
+      return false;
+    }
+    // catch all other non-200 responses (shouldn't get here)
+    if (!response.ok) {
+      return false;
+    }
+    // Handle special 204 response: Continue refresh loop but don't render UI
+    if (response.status === 204) {
+      clearDisplay();
+      document.getElementById("message").innerHTML =
+        response.status === 204
+          ? "<p>System initializing ...</p>"
+          : "<p>Could not find system</p>";
+      document.getElementById("message").classList.remove("hidden");
+      return "WAIT";
+    }
+
+    // 200 response, should have json body
+    return await response.json();
+  });
+
+  if (state) {
+    // Set global state and render UI
+    // exclude 204s
+    if (state !== "WAIT") {
+      globals.setState(state);
+
+      // On page load and config changes, redraw control sets
+      if (
+        state.config_hash !== configHash ||
+        !document.getElementById("main-controls").innerHTML
+      ) {
+        configHash = state.config_hash;
+        drawUI(state);
+      }
+
+      // Attach listeners and set state on controls
+      updateAllControls(state);
+
+      // Check for maintenance mode
+      if (state.maintenance_mode) {
+        document
+          .getElementById("maintenance-mode-warning")
+          .classList.remove("hidden");
+      } else {
+        document
+          .getElementById("maintenance-mode-warning")
+          .classList.add("hidden");
+      }
+
+      // Check for recording mode
+      if (state.recording?.status) {
+        document
+          .getElementById("recording-indicator")
+          .classList.remove("hidden");
+      } else {
+        document.getElementById("recording-indicator").classList.add("hidden");
+      }
+    }
+
+    bumpMainContentForBanners(); // default cleanup after modules
+
+    // On OK statuses, continue refresh loop
+    refresh = window.setTimeout(refreshState, REFRESH_WAIT);
+  }
+}
+
+// Failback attempt loop
+function attemptFailback() {
+  // Pick a random back off time to allow original host to recover
+  const waitTime = Math.floor(
+    Math.random() * (MAX_FAILBACK_WAIT - MIN_FAILBACK_WAIT) + MIN_FAILBACK_WAIT,
+  );
+
+  // Reconstruct failback location without failback_host param
+  const queryParams = new URLSearchParams(window.location.search);
+  const origHost = queryParams.get("failback_host");
+  queryParams.delete("failback_host");
+
+  // also check for failback_orchestrator param that needs to get converted to plain orchestrator param
+  if (queryParams.has("failback_orchestrator")) {
+    const origOrchestrator = queryParams.get("failback_orchestrator");
+    queryParams.delete("failback_orchestrator");
+    queryParams.set("orchestrator", origOrchestrator);
+  }
+
+  const origLocation = queryParams.size
+    ? `${origHost}?${queryParams.toString()}`
+    : origHost;
+  console.log(`Attempting failback to ${origLocation} in ${waitTime}ms`);
+
+  setTimeout(async () => {
+    if (await healthcheckHost(origHost)) {
+      location.replace(origLocation);
+    } else {
+      // Try again after another random back off period
+      attemptFailback();
+    }
+  }, waitTime);
+}
+
+/*
+ * Page load
+ */
 window.addEventListener("load", async () => {
   // Check for home orchestrator from server config
   await fetch("/config")
     .then((response) => response.json())
     .then((json) => {
-      globals.setHomeOrchestrator(json.orchestrator);
-      globals.setOrchestrator(json.orchestrator);
-      return json.orchestrator;
+      if (json.orchestrator) {
+        globals.setOrchestrator(json.orchestrator);
+      }
+      if (json.system) {
+        globals.setSystem(json.system);
+      }
     })
     .catch((err) => {
-      console.log("Could not get 'orchestrator' from server", err);
-      return null;
+      console.error("Error getting /config", err);
+      throwClientError(
+        `Error getting /config: ${err.reason?.stack}`,
+        "N4jBbg32XG",
+        3,
+      );
     });
 
-  // If orchestrator param set in URL, use this as current value (overwrite homeOrchestrator)
+  // If orchestrator param set in URL, overwrite any default orchestrator value already set
   const queryParams = new URLSearchParams(window.location.search);
   if (queryParams.has("orchestrator")) {
     let orchestrator = queryParams.get("orchestrator");
@@ -666,7 +707,7 @@ window.addEventListener("load", async () => {
     globals.setOrchestrator(orchestrator);
   }
 
-  // Set global system from query param
+  // If system param present, override any default system value already set
   if (queryParams.has("system")) {
     globals.setSystem(queryParams.get("system"));
   }
@@ -674,6 +715,22 @@ window.addEventListener("load", async () => {
   // If either orchestrator or system is not set, show error message and stop processing
   if (!globals.getOrchestrator() || !globals.getSystem()) {
     return alert404();
+  }
+
+  // Check if this is a failed over client and failback is needed
+  if (queryParams.has("failback_host")) {
+    attemptFailback();
+    throwClientError(
+      `${queryParams.get("failback_host")} has failed over to this host`,
+      "3oP8UUsZU876",
+      3,
+    );
+  }
+
+  // Check for scale factor
+  if (queryParams.has("scale")) {
+    const scale = queryParams.get("scale") / 100;
+    document.querySelector(":root").style.setProperty("--scale-factor", scale);
   }
 
   // start refreshState loop
@@ -689,5 +746,22 @@ window.addEventListener("update_complete", () => {
   refresh = window.setTimeout(refreshState, REFRESH_WAIT);
   // refreshState(); <-- Again, although tempting, makes volume slider jumpy
 });
+
+/* Global runtime error catching */
+function globalErrorHandler(e) {
+  e.preventDefault();
+  console.error(e);
+
+  // POST error to orchestrator, severity 1 (highest)
+  throwClientError(
+    `Unhandled Javascript error: ${e.reason.stack}\nLast get_status: ${
+      globals.getState() ? JSON.stringify(globals.getState()) : ""
+    }`,
+    "84hfn3jd7h4n",
+    2,
+  );
+}
+window.addEventListener("error", globalErrorHandler);
+window.addEventListener("unhandledrejection", globalErrorHandler);
 
 export { setupControlSet };

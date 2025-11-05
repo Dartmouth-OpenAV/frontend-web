@@ -757,7 +757,7 @@ function globalErrorHandler(e) {
 
   // POST error to orchestrator, severity 1 (highest)
   throwClientError(
-    `Unhandled Javascript error: ${e.reason.stack}\nLast get_status: ${
+    `Unhandled Javascript error: ${e.reason?.stack}\nLast get_status: ${
       globals.getState() ? JSON.stringify(globals.getState()) : ""
     }`,
     "84hfn3jd7h4n",

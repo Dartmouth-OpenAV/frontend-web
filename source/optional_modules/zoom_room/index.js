@@ -301,17 +301,22 @@ function displayZoomStatus(e) {
     });
 
   // Update banners
-  const meetingStatus =
-    zoomData.meeting?.status && zoomData.meeting.info.meeting_type === "meeting"
-      ? zoomData.meeting.status
-      : false;
+  // const meetingStatus =
+  //   zoomData.meeting?.status &&
+  //   zoomData.meeting?.info?.meeting_type === "meeting"
+  //     ? zoomData.meeting.status
+  //     : false;
+  const meetingStatus = zoomData.meeting?.status;
 
   const currentMeeting = zoomData.meeting?.info?.meeting_name
     ? zoomData.meeting.info.meeting_name
     : zoomData.meeting?.info?.meeting_number;
 
   // in_meeting
-  if (meetingStatus === "in_meeting") {
+  if (
+    meetingStatus === "in_meeting" &&
+    zoomData.meeting?.info?.meeting_type === "meeting"
+  ) {
     zoomBanner.querySelector(".feedback-message").innerHTML =
       `In meeting: ${currentMeeting}`;
 
@@ -398,8 +403,6 @@ function displayZoomStatus(e) {
       "#share-screen-zoom-prompt .zoom-sharing-key",
     ).innerHTML = "Not Available";
   }
-
-  // Check for camera and audio mute warnings
 }
 
 function handleZoomMeetingPromptClick(e) {

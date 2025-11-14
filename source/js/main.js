@@ -34,6 +34,8 @@ const MIN_FAILBACK_WAIT = 3 * 60 * 1000; // 3 minutes
 const MAX_FAILBACK_WAIT = 10 * 60 * 1000; // 10 minutes
 let refresh, configHash;
 let nextAvailableTimer = 0;
+let getStateInProgress = false;
+let abortDraw = false;
 
 function clearDisplay() {
   // clear main controls
@@ -560,6 +562,8 @@ async function refreshState() {
     return null;
   }
 
+  getStateInProgress = true;
+
   // Request state from orchestrator
   const state = await orchestratorRequest(
     `${orchestrator}/api/systems/${system}/state`,
@@ -591,6 +595,12 @@ async function refreshState() {
     // 200 response, should have json body
     return await response.json();
   });
+
+  // Check for conflicting updateStatus calls
+  if (abortDraw) {
+    getStateInProgress = false;
+    return;
+  }
 
   if (state) {
     // Set global state and render UI
@@ -639,6 +649,8 @@ async function refreshState() {
     // On OK statuses, continue refresh loop
     refresh = window.setTimeout(refreshState, REFRESH_WAIT);
   }
+
+  getStateInProgress = false;
 }
 
 // Failback attempt loop
@@ -741,13 +753,25 @@ window.addEventListener("load", async () => {
 });
 
 /* updateStatus listeners */
-window.addEventListener("update_started", pauseRefresh);
+window.addEventListener("update_started", () => {
+  pauseRefresh();
+
+  // Set a flag so that if a refresh is already in progress, it can "abort" itself
+  abortDraw = true;
+});
 window.addEventListener("update_complete", () => {
   // if (e.detail) {
   //   updateAllControls(e.detail);
   // } <-- Although tempting, makes volume slider jumpy
-  refresh = window.setTimeout(refreshState, REFRESH_WAIT);
   // refreshState(); <-- Again, although tempting, makes volume slider jumpy
+
+  abortDraw = getStateInProgress;
+
+  window.clearTimeout(refresh);
+  refresh = window.setTimeout(() => {
+    abortDraw = false;
+    refreshState();
+  }, REFRESH_WAIT);
 });
 
 /* Global runtime error catching */

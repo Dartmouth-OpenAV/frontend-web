@@ -35,6 +35,9 @@ const availableTimers = [
 ];
 
 function setVolumeSliderState(slider, level) {
+  // cache original value for dispatchChangeEvents to compare
+  const origValue = slider.value;
+
   // check for linked mute state
   const channel = slider.getAttribute("data-channel");
   if (channel !== "" && channel !== null) {
@@ -64,7 +67,9 @@ function setVolumeSliderState(slider, level) {
   }
 
   // Alert modules with dependencies on this control's state
-  dispatchStateChangeEvents(slider);
+  if (level !== origValue) {
+    dispatchStateChangeEvents(slider);
+  }
 }
 
 // Removed unused "isRecursion = false" from declaration

@@ -23,7 +23,8 @@ function setVideoMuteButtonState(btn, state) {
     btn.querySelector(".button-label").innerHTML = "Hide video";
   }
 
-  // data-* attributes
+  // Set data-* attributes; first cache original value for dispatchChangeEvents to compare
+  const origValue = btn.getAttribute("data-value") === "true" ? true : false;
   btn.setAttribute("data-value", state);
 
   // handlers
@@ -48,7 +49,9 @@ function setVideoMuteButtonState(btn, state) {
   }
 
   // Alert modules with dependencies on this control's state
-  dispatchStateChangeEvents(btn);
+  if (state != origValue) {
+    dispatchStateChangeEvents(btn);
+  }
 }
 
 function handleVideoMute(e) {

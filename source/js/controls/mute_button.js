@@ -23,7 +23,8 @@ function setMuteButtonState(btn, state) {
     btn.querySelector(".slash").classList.add("hidden");
   }
 
-  // data-* attributes
+  // Set data-* attributes; first cache original value for dispatchChangeEvents to compare
+  const origValue = btn.getAttribute("data-value") === "true" ? true : false;
   btn.setAttribute("data-value", state);
 
   // handlers
@@ -33,7 +34,9 @@ function setMuteButtonState(btn, state) {
   }
 
   // Alert modules with dependencies on this control's state
-  dispatchStateChangeEvents(btn);
+  if (state != origValue) {
+    dispatchStateChangeEvents(btn);
+  }
 }
 
 function handleMuteButton(e) {

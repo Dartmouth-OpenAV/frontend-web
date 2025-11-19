@@ -562,7 +562,14 @@ function initiateZoomGUI() {
 
     function powerHandler(e) {
       const triggerBtn = e.detail;
-      if (triggerBtn.getAttribute("data-value") === "false") {
+      // In case of multi-screen rooms, make sure no other video output is on Zoom
+      const activeZoomInputs = document.querySelectorAll(
+        "[data-zoom-meeting-prompt][data-value=true].active, [data-zoom-share-prompt][data-value=true].active",
+      );
+      if (
+        triggerBtn.getAttribute("data-value") === "false" &&
+        activeZoomInputs.length === 0
+      ) {
         const banner = document.getElementById("zoom-room-notification");
         const meetingJoined = banner.hasAttribute("data-meeting-joined");
         const leaveInitiated = banner.hasAttribute("data-leaving-meeting");

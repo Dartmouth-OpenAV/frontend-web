@@ -3,8 +3,6 @@ import { updateStatus } from "../../js/orchestrator_request.js";
 import { registerStateChangeEvent } from "../../js/utilities.js";
 import { globals } from "../../js/globals.js";
 let guiInitiated = false;
-let zoomInputActive = false;
-let powerActive = false;
 
 function initiateCameraIntegration() {
   // make sure elements only get initialized once
@@ -42,28 +40,22 @@ function handleZoomSelected(e) {
     triggerBtn.getAttribute("data-override") === "true" ||
     triggerBtn.getAttribute("data-value") === "false"
   ) {
-    zoomInputActive = false;
     return;
   }
-  if (zoomInputActive === false) {
-    const targetBtnParent = e.target.parentElement;
-    const radioIsSetToPrivacy = targetBtnParent.querySelector(
-      ".radio-option[data-option=privacy][data-value=true]",
-    )
-      ? true
-      : false;
-    const noPresetSelected = targetBtnParent.querySelector(
-      ".radio-option.active",
-    )
-      ? false
-      : true;
-    if (radioIsSetToPrivacy || noPresetSelected) {
-      const payload = targetBtn
-        .getAttribute("data-path")
-        .replace(/<value>/, true);
-      updateStatus(payload, null);
-    }
-    zoomInputActive = true;
+  const targetBtnParent = e.target.parentElement;
+  const radioIsSetToPrivacy = targetBtnParent.querySelector(
+    ".radio-option[data-option=privacy][data-value=true]",
+  )
+    ? true
+    : false;
+  const noPresetSelected = targetBtnParent.querySelector(".radio-option.active")
+    ? false
+    : true;
+  if (radioIsSetToPrivacy || noPresetSelected) {
+    const payload = targetBtn
+      .getAttribute("data-path")
+      .replace(/<value>/, true);
+    updateStatus(payload, null);
   }
 }
 
@@ -72,7 +64,6 @@ function handlePowerSelected(e) {
   const triggerBtn = e.detail;
   const targetBtn = e.target;
   if (triggerBtn.getAttribute("data-value") === "true") {
-    powerActive = true;
     return;
   }
   const allPowerOff =
@@ -80,15 +71,13 @@ function handlePowerSelected(e) {
   // If recording doesn't exist OR is not active AND all power buttons are off, set the cameras to called preset
   if (
     (!Object.hasOwn(globals.getState(), "recording") ||
-      globals.getState().recording?.status?.recording === false) &&
-    allPowerOff === true &&
-    powerActive === true
+      globals.getState().recording?.status === false) &&
+    allPowerOff === true
   ) {
     const payload = targetBtn
       .getAttribute("data-path")
       .replace(/<value>/, true);
     updateStatus(payload, null);
-    powerActive = false;
   }
 }
 

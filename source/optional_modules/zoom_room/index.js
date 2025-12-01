@@ -202,6 +202,16 @@ function selectZoomInput(input, newSelection = false) {
   }
 }
 
+function healSelectedInputs() {
+  document
+    .querySelectorAll(
+      "[data-zoom-last-selected][data-value=true][data-override=false]",
+    )
+    .forEach((input) => {
+      selectZoomInput(input);
+    });
+}
+
 function handleZoomRoomWarning(e) {
   const btn = e.target;
   const banner = btn.parentElement;
@@ -292,20 +302,9 @@ function displayZoomStatus(e) {
   }
 
   // Highlight correct Zoom inputs
-  document
-    .querySelectorAll(
-      "[data-zoom-last-selected][data-value=true][data-override=false]",
-    )
-    .forEach((input) => {
-      selectZoomInput(input);
-    });
+  healSelectedInputs();
 
   // Update banners
-  // const meetingStatus =
-  //   zoomData.meeting?.status &&
-  //   zoomData.meeting?.info?.meeting_type === "meeting"
-  //     ? zoomData.meeting.status
-  //     : false;
   const meetingStatus = zoomData.meeting?.status;
 
   const currentMeeting = zoomData.meeting?.info?.meeting_name
@@ -549,20 +548,10 @@ function initiateZoomGUI() {
     });
 
     // Register state change callbacks for Zoom inputs and any linked Power buttons
-    function inputChangeCallback(e) {
-      // e.currentTarget is the parent radio in this case
-      e.currentTarget
-        .querySelectorAll(
-          "[data-zoom-last-selected][data-value=true][data-override=false]",
-        )
-        .forEach((input) => {
-          selectZoomInput(input);
-        });
-    }
-
     function powerHandler(e) {
       const triggerBtn = e.detail;
       // In case of multi-screen rooms, make sure no other video output is on Zoom
+      // before leaving meeting on shutdown
       const activeZoomInputs = document.querySelectorAll(
         "[data-zoom-meeting-prompt][data-value=true].active, [data-zoom-share-prompt][data-value=true].active",
       );
@@ -577,6 +566,11 @@ function initiateZoomGUI() {
           leaveZoomMeeting();
         }
       }
+
+      // On power on, disambiguate any Zoom Meeting/Screen Share buttons
+      if (triggerBtn.getAttribute("data-value") === "true") {
+        healSelectedInputs();
+      }
     }
 
     document
@@ -587,7 +581,7 @@ function initiateZoomGUI() {
           "zoom_input_updated",
           input,
           [input.parentElement],
-          inputChangeCallback,
+          healSelectedInputs,
         );
 
         // Look for linked power buttons, which should trigger Zoom leave on shutdown

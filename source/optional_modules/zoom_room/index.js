@@ -46,7 +46,7 @@ function joinZoomMeeting(meetingId, password, callback = null) {
   });
 }
 
-function leaveZoomMeeting(callback = null) {
+function leaveZoomMeeting(callback = null, userInput = true) {
   // User feedback: update banner
   const banner = document.getElementById("zoom-room-notification");
   const currentMeeting = zoomData.meeting?.info?.meeting_name
@@ -68,12 +68,16 @@ function leaveZoomMeeting(callback = null) {
       leave: true,
     },
   });
-  updateStatus(payload, () => {
-    // call callback (reset)
-    if (callback) {
-      callback();
-    }
-  });
+  updateStatus(
+    payload,
+    () => {
+      // call callback (reset)
+      if (callback) {
+        callback();
+      }
+    },
+    userInput,
+  );
 }
 
 function handleSuggestedJoinSubmit() {
@@ -550,8 +554,8 @@ function initiateZoomGUI() {
     // Register state change callbacks for Zoom inputs and any linked Power buttons
     function powerHandler(e) {
       const triggerBtn = e.detail;
-      // In case of multi-screen rooms, make sure no other video output is on Zoom
-      // before leaving meeting on shutdown
+      // On power off, leave Zoom. In case of multi-screen rooms, make sure no other
+      // video output is on Zoom before leaving meeting
       const activeZoomInputs = document.querySelectorAll(
         "[data-zoom-meeting-prompt][data-value=true].active, [data-zoom-share-prompt][data-value=true].active",
       );
@@ -563,7 +567,7 @@ function initiateZoomGUI() {
         const meetingJoined = banner.hasAttribute("data-meeting-joined");
         const leaveInitiated = banner.hasAttribute("data-leaving-meeting");
         if (meetingJoined && !leaveInitiated) {
-          leaveZoomMeeting();
+          leaveZoomMeeting(null, false); // pass flag for non-user initiated update
         }
       }
 

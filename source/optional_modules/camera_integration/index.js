@@ -55,7 +55,7 @@ function handleZoomSelected(e) {
     const payload = targetBtn
       .getAttribute("data-path")
       .replace(/<value>/, true);
-    updateStatus(payload, null);
+    updateStatus(payload, null, false);
   }
 }
 
@@ -77,7 +77,7 @@ function handlePowerSelected(e) {
     const payload = targetBtn
       .getAttribute("data-path")
       .replace(/<value>/, true);
-    updateStatus(payload, null);
+    updateStatus(payload, null, false);
   }
 }
 

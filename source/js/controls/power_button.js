@@ -15,13 +15,13 @@ import {
   followPath,
   mergeJSON,
   countdown,
+  countdownTimeoutId,
   useProgressBar,
   disableControl,
   enableControl,
 } from "../utilities.js";
 
 const shutdownWarningTime = 60; // seconds
-let countdownTimeoutId;
 
 function setPowerState(powerBtn, state) {
   setButtonState(powerBtn, state, handleTogglePower);
@@ -222,7 +222,7 @@ function handleTogglePower(e) {
   else {
     // set the confirmation screen projector counter and name
     confirmation.querySelector(".counter").innerHTML = shutdownWarningTime;
-    countdown(countdownTimeoutId, confirmation.querySelector(".counter"));
+    countdown(confirmation.querySelector(".counter"));
     confirmation.querySelector(".projector-name").textContent =
       btn.getAttribute("data-channel-name");
 

@@ -46,8 +46,14 @@ function joinZoomMeeting(meetingId, password, callback = null) {
   });
 }
 
-function leaveZoomMeeting(callback = null, userInput = true) {
-  // User feedback: update banner
+function leaveZoomMeeting(userInput = true) {
+  // Block further leave attempts from leave modal
+  const submitBtn = document.querySelector(
+    "#leave-zoom-prompt button[name=leave-meeting]",
+  );
+  submitBtn.removeEventListener("click", leaveZoomMeeting);
+
+  // Visual feedback: update banner
   const banner = document.getElementById("zoom-room-notification");
   const currentMeeting = zoomData.meeting?.info?.meeting_name
     ? zoomData.meeting.info.meeting_name
@@ -59,7 +65,7 @@ function leaveZoomMeeting(callback = null, userInput = true) {
   leaveBtn.classList.add("hidden");
   showBanner();
 
-  // add a hook for powerHandler to see the leave attempt initiated
+  // Add a hook for powerHandler to see the leave attempt initiated
   banner.setAttribute("data-leaving-meeting", "");
 
   // Post leave request to orchestrator
@@ -68,16 +74,7 @@ function leaveZoomMeeting(callback = null, userInput = true) {
       leave: true,
     },
   });
-  updateStatus(
-    payload,
-    () => {
-      // call callback (reset)
-      if (callback) {
-        callback();
-      }
-    },
-    userInput,
-  );
+  updateStatus(payload, cleanupLeaveZoomPrompt, userInput);
 }
 
 function handleSuggestedJoinSubmit() {
@@ -118,20 +115,6 @@ function handleManualJoinSubmit(e) {
   joinZoomMeeting(meetingId, password, reset);
 }
 
-function handleLeaveSubmit() {
-  // remove submit listener
-  const modal = document.getElementById("leave-zoom-prompt");
-  const submitBtn = modal.querySelector("button[name=leave-meeting]"); // TO DO: refactor to use form/submit?
-  submitBtn.removeEventListener("click", handleLeaveSubmit);
-
-  // callback for updateStatus
-  function reset() {
-    modal.classList.add("hidden");
-  }
-
-  leaveZoomMeeting(reset);
-}
-
 // Making this snippet reusable so that Manual Meeting join can share
 // with Suggested Meeting dismiss
 function openManualJoinForm() {
@@ -154,9 +137,14 @@ function openLeaveZoomPrompt() {
   const modal = document.getElementById("leave-zoom-prompt");
   modal
     .querySelector("button[name=leave-meeting]")
-    .addEventListener("click", handleLeaveSubmit);
+    .addEventListener("click", leaveZoomMeeting);
 
   openModal(null, "leave-zoom-prompt");
+}
+
+function cleanupLeaveZoomPrompt() {
+  const modal = document.getElementById("leave-zoom-prompt");
+  modal.classList.add("hidden");
 }
 
 // Check for other Zoom inputs (eg. a Share Screen button) and set data-override
@@ -567,7 +555,8 @@ function initiateZoomGUI() {
         const meetingJoined = banner.hasAttribute("data-meeting-joined");
         const leaveInitiated = banner.hasAttribute("data-leaving-meeting");
         if (meetingJoined && !leaveInitiated) {
-          leaveZoomMeeting(null, false); // pass flag for non-user initiated update
+          // leaveZoomMeeting(null, false); // pass flag for non-user initiated update
+          leaveZoomMeeting(false); // pass flag for non-user initiated update
         }
       }
 
@@ -633,7 +622,8 @@ function initiateZoomGUI() {
         // remove manual-zoom-prompt submit handler
         document
           .querySelector("#leave-zoom-prompt button[name=leave-meeting]")
-          .removeEventListener("click", handleLeaveSubmit);
+          // .removeEventListener("click", handleLeaveSubmit);
+          .removeEventListener("click", leaveZoomMeeting);
       });
 
     // Focus listener for "join meeting" form inputs

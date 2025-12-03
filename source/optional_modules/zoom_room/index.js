@@ -606,6 +606,19 @@ function initiateZoomGUI() {
             powerHandler,
           );
         }
+
+        // Look for linked video_mute buttons, which should heal input state on unmute
+        const linkedPause = channel
+          ? document.querySelector(`.pause-button[data-channel=${channel}]`)
+          : null;
+        if (linkedPause) {
+          registerStateChangeEvent(
+            "video_mute_updated",
+            linkedPause,
+            [input.parentElement],
+            healSelectedInputs,
+          );
+        }
       });
 
     // Attach static listeners to inputs in custom Zoom modals, eg. Cancel/Back dismiss buttons

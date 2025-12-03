@@ -8,6 +8,8 @@
 import { updateStatus, orchestratorRequest } from "./orchestrator_request.js";
 import { globals } from "./globals.js";
 
+let countdownTimeoutId;
+
 function mergeJSON(obj1, obj2) {
   let attributes = Object.keys(obj2);
 
@@ -44,7 +46,7 @@ function followPath(path, obj) {
   }
 }
 
-function countdown(countdownTimeoutId, counterDiv) {
+function countdown(counterDiv) {
   // get the current number
   var curr = parseInt(counterDiv.innerHTML);
 
@@ -53,7 +55,7 @@ function countdown(countdownTimeoutId, counterDiv) {
 
   countdownTimeoutId = setTimeout(function () {
     if (curr > 1) {
-      countdown(countdownTimeoutId, counterDiv);
+      countdown(counterDiv, countdownTimeoutId);
     } else {
       clearTimeout(countdownTimeoutId);
     }
@@ -242,6 +244,7 @@ export {
   mergeJSON,
   followPath,
   countdown,
+  countdownTimeoutId,
   useProgressBar,
   bumpMainContentForBanners,
   sendUIInteractionUpdate,

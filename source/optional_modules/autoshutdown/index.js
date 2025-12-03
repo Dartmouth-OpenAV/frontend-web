@@ -9,6 +9,7 @@ import {
   sendUIInteractionUpdate,
   countdown,
   disableControl,
+  countdownTimeoutId,
   useProgressBar,
   throwClientError,
 } from "../../js/utilities.js";
@@ -27,7 +28,6 @@ import "./autoshutdown.css";
 let autoshutdownTriggered = false;
 let autoshutdownTimeoutId = false;
 let autoshutdownWarningTime = 600;
-let countdownTimeoutId;
 
 // environmentSensingData -- environment_sensing object from getState response
 function checkForAutoshutdown() {
@@ -90,7 +90,7 @@ function checkForAutoshutdown() {
       // Default action: shutdown after 600 seconds
       let countdownSpan = autoshutdownWarningModal.querySelector(".counter");
       countdownSpan.textContent = autoshutdownWarningTime;
-      countdown(countdownTimeoutId, countdownSpan);
+      countdown(countdownSpan);
       var duration = autoshutdownWarningTime * 1000 + 100;
       autoshutdownTimeoutId = setTimeout(autoshutdown, duration);
     }

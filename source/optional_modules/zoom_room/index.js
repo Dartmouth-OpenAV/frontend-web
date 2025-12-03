@@ -553,6 +553,10 @@ function initiateZoomGUI() {
     // Register state change callbacks for Zoom inputs and any linked Power buttons
     function powerHandler(e) {
       const triggerBtn = e.detail;
+      const banner = document.getElementById("zoom-room-notification");
+      const meetingJoined = banner.hasAttribute("data-meeting-joined");
+      const leaveInitiated = banner.hasAttribute("data-leaving-meeting");
+
       // On power off, leave Zoom. In case of multi-screen rooms, make sure no other
       // video output is on Zoom before leaving meeting
       const activeZoomInputs = document.querySelectorAll(
@@ -560,19 +564,21 @@ function initiateZoomGUI() {
       );
       if (
         triggerBtn.getAttribute("data-value") === "false" &&
-        activeZoomInputs.length === 0
+        activeZoomInputs.length === 0 &&
+        meetingJoined &&
+        !leaveInitiated
       ) {
-        const banner = document.getElementById("zoom-room-notification");
-        const meetingJoined = banner.hasAttribute("data-meeting-joined");
-        const leaveInitiated = banner.hasAttribute("data-leaving-meeting");
-        if (meetingJoined && !leaveInitiated) {
-          leaveZoomMeeting(false); // pass flag for non-user initiated update
-        }
+        leaveZoomMeeting(false); // pass flag for non-user initiated update
       }
 
       // On power on, disambiguate any Zoom Meeting/Screen Share buttons
       if (triggerBtn.getAttribute("data-value") === "true") {
         healSelectedInputs();
+
+        // Power flap detection: If power comes back on after leave initiated, abort the leave
+        if (leaveInitiated) {
+          clearInterval(countdownTimeoutId);
+        }
       }
     }
 

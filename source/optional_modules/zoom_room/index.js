@@ -4,6 +4,7 @@ import { updateStatus } from "../../js/orchestrator_request.js";
 import {
   bumpMainContentForBanners,
   registerStateChangeEvent,
+  countdown
 } from "../../js/utilities.js";
 import { attachSharedModalListeners, openModal } from "../../js/modals.js";
 
@@ -16,7 +17,8 @@ import shareScreenModal from "./components/share_screen_modal.html";
 import sharingKeyTemplate from "./components/sharing_key.html";
 import "./zoom.css";
 
-let zoomData;
+const leaveWarningTime = 60; // seconds
+let zoomData, countdownTimeoutId;
 
 function showBanner() {
   const banner = document.getElementById("zoom-room-notification");
@@ -120,11 +122,19 @@ function openManualJoinForm() {
 
 // Making this snippet reusable to share with "Leave" button in status banner
 function openLeaveZoomPrompt() {
-  // re-attach submit listeners etc ...
+  // Re-attach submit listener
   const modal = document.getElementById("leave-zoom-prompt");
   modal
     .querySelector("button[name=leave-meeting]")
     .addEventListener("click", leaveZoomMeeting);
+
+  // Start countdown with default action of leaving meeting
+  clearInterval(countdownTimeoutId);
+  countdownTimeoutId = countdown(
+    modal.querySelector(".counter"),
+    leaveWarningTime,
+    leaveZoomMeeting,
+  );
 
   openModal(null, "leave-zoom-prompt");
 }
@@ -132,6 +142,7 @@ function openLeaveZoomPrompt() {
 function cleanupLeaveZoomPrompt() {
   const modal = document.getElementById("leave-zoom-prompt");
   modal.classList.add("hidden");
+  clearInterval(countdownTimeoutId);
 }
 
 function handleSuggestedJoinSubmit() {
@@ -555,7 +566,6 @@ function initiateZoomGUI() {
         const meetingJoined = banner.hasAttribute("data-meeting-joined");
         const leaveInitiated = banner.hasAttribute("data-leaving-meeting");
         if (meetingJoined && !leaveInitiated) {
-          // leaveZoomMeeting(null, false); // pass flag for non-user initiated update
           leaveZoomMeeting(false); // pass flag for non-user initiated update
         }
       }
@@ -618,13 +628,7 @@ function initiateZoomGUI() {
       });
     document
       .querySelector("#leave-zoom-prompt button.dismiss-modal")
-      .addEventListener("click", () => {
-        // remove manual-zoom-prompt submit handler
-        document
-          .querySelector("#leave-zoom-prompt button[name=leave-meeting]")
-          // .removeEventListener("click", handleLeaveSubmit);
-          .removeEventListener("click", leaveZoomMeeting);
-      });
+      .addEventListener("click", cleanupLeaveZoomPrompt);
 
     // Focus listener for "join meeting" form inputs
     document

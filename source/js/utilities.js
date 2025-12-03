@@ -8,8 +8,6 @@
 import { updateStatus, orchestratorRequest } from "./orchestrator_request.js";
 import { globals } from "./globals.js";
 
-let countdownTimeoutId;
-
 function mergeJSON(obj1, obj2) {
   let attributes = Object.keys(obj2);
 
@@ -46,20 +44,24 @@ function followPath(path, obj) {
   }
 }
 
-function countdown(counterDiv) {
-  // get the current number
-  var curr = parseInt(counterDiv.innerHTML);
+// duration should be given in seconds
+function countdown(counterDiv, duration, callback = null) {
+  let curr = duration;
+  counterDiv.innerHTML = curr;
 
-  // reset it to current -1
-  counterDiv.innerHTML = curr - 1;
+  const timeoutId = setInterval(function () {
+    curr -= 1;
+    counterDiv.innerHTML = curr;
 
-  countdownTimeoutId = setTimeout(function () {
-    if (curr > 1) {
-      countdown(counterDiv, countdownTimeoutId);
-    } else {
-      clearTimeout(countdownTimeoutId);
+    if (curr <= 0) {
+      clearInterval(timeoutId);
+      if (callback) {
+        callback();
+      }
     }
   }, 1000);
+
+  return timeoutId;
 }
 
 // useProgressBar gets called in both handleTogglePower and handleDisplaySourceSelect
@@ -244,7 +246,6 @@ export {
   mergeJSON,
   followPath,
   countdown,
-  countdownTimeoutId,
   useProgressBar,
   bumpMainContentForBanners,
   sendUIInteractionUpdate,

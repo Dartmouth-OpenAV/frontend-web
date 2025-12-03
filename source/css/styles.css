@@ -33,6 +33,7 @@
   --gray-darker: #0a0a0a;
 
   --theme-color: #b500ff;
+  --accent-1: #6e0099;
   --active-element: var(--theme-color);
   --primary-button: var(--theme-color);
   --inactive-element: var(--gray-light);
@@ -97,10 +98,11 @@ h2 {
   padding-top: calc(var(--room-header-height) + 2.5rem);
 }
 
-.primary-control-group { /* Banner accomodations */
+/* banner accomodations */
+#main-controls, .primary-control-group:first-of-type { 
   padding-top: calc(var(--room-header-height) + 2.5rem);
 }
-.primary-control-group.banners-active {
+#main-controls.banners-active, .primary-control-group:first-of-type {
   padding-top: calc(var(--num-banners) * var(--banner-height) + var(--room-header-height) + 2.5rem);
 }
 
@@ -176,7 +178,8 @@ button {
   position: relative;
   overflow: hidden;
   background-color: #3d3d3d;
-  box-shadow: 0 0.1rem 0.1rem 0 rgba(0, 0, 0, 0.15), 0 0.1rem 0.3rem 0.1rem rgba(0, 0, 0, 0.4);
+  /* box-shadow: 0 0.1rem 0.1rem 0 rgba(0, 0, 0, 0.15), 0 0.1rem 0.3rem 0.1rem rgba(0, 0, 0, 0.4); */
+  box-shadow: 0 0.1rem 0.1rem 0 rgba(0, 0, 0, 0.15), 0 0.1rem 0.8rem 0.4rem rgba(0, 0, 0, 0.4);
   padding: 0.5rem;
   margin: 0 0.7rem 1rem;
   border-radius: 1rem;
@@ -185,25 +188,34 @@ button > * {
   pointer-events: none;
 }
 
-button:focus, button:active {
+/* button:focus, button:active {
+  outline: none;
+} */
+button:active {
+  box-shadow: 0 0.1rem 0.1rem 0 rgba(0, 0, 0, 0.15), 0 0.1rem 0.3rem 0.1rem rgba(0, 0, 0, 0.4);
+}
+button:focus {
   outline: none;
 }
-
-button.active, button.full.active, button.focus, button.full.focus {
+button:active, button.active, button.full.active, button.focus, button.full.focus, button.text-only:active {
   background-color: var(--theme-color);
   color: #fff;
+  outline: none;
 }
-button.active .button-label, button.full.active .button-label, button.focus .button-label, button.full.focus .button-label {
+button.focus:active, button.active:active {
+  background-color: var(--accent-1);
+}
+button.active .button-label, button:active .button-label, button.text-only:active .button-label, button.full.active .button-label, button.focus .button-label, button.full.focus .button-label {
   color: #fff;
 }
-button.active .outline, button.full.active .outline, button.focus .outline, button.full.focus .outline {
+button:active .outline, button.active .outline, button.full.active .outline, button.focus .outline, button.full.focus .outline {
   stroke: #fff;
 }
-button.active .shape, button.full.active .shape, button.focus .shape, button.full.focus .shape {
+button:active .shape, button.active .shape, button.full.active .shape, button.focus .shape, button.full.focus .shape {
   stroke: #fff;
   fill: #fff;
 }
-button.active .shape-inverted, button.full.active .shape-inverted, button.focus .shape-inverted, button.full.focus .shape-inverted {
+button:active .shape-inverted, button.full.active .shape-inverted, button.focus .shape-inverted, button.full.focus .shape-inverted {
   fill: #fff;
   stroke: var(--theme-color);
 }
@@ -693,15 +705,18 @@ h1#room-name {
   min-width: max-content;
   height: 4.8rem;
 }
+.banner button.text-only .button-label {
+  font-size: 2.4rem;
+}
 
 .banner.warning {
   background-color: var(--warning-red);
   border: 0.1rem solid #c6142b;
 }
-.banner.warning button {
+.banner.warning button, .banner.warning .button-label {
   color: var(--warning-red);
 }
-.banner.warning button.active {
+.banner.warning button.active, .banner.warning button:active {
   color: #fff;
   background-color: #ee5267;
 }
@@ -844,40 +859,10 @@ h1#room-name {
 #shutdown-countdown, #shutdown-notification {
   min-height: 13.5rem;
 }
-#autoshutdown-warning {
-  background-color: var(--theme-color);
-  color: #fff;
-}
-#autoshutdown-warning .shape {
-  fill: #fff;
-  stroke: #fff;
-}
-#autoshutdown-warning button {
-  background-color: rgba(0, 0, 0, 0.2);
-}
-#autoshutdown-warning button.focus, #autoshutdown-warning button.active {
-  background-color: #fff;
-}
-#autoshutdown-warning button.focus .button-label, #autoshutdown-warning button.active .button-label {
-  color: #9500d2;
-}
-#autoshutdown-warning button.disabled {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-#autoshutdown-warning button.disabled .button-label {
-  color: #9103cc;
-}
-#autoshutdown-warning button.active.disabled {
-  background-color: #cccccc;
-}
-#autoshutdown-warning button.active.disabled .button-label {
-  color: var(--disabled-element);
-}
 
-#shutdown-confirmation.hidden, #autoshutdown-warning.hidden {
+#shutdown-confirmation.hidden{
   display: none;
 }
-
 
 /* Advanced Controls */
 #advanced-modals-container .modal .dismiss-modal {
@@ -1133,7 +1118,7 @@ h1#room-name {
     --room-header-height: 5rem;
     --banner-height: 5.1rem;
   }
-  .primary-control-group:first-of-type.banners-active {
+  #main-controls.banners-active, .primary-control-group:first-of-type.banners-active {
     padding-top: calc(var(--num-banners) * var(--banner-height) + var(--room-header-height) + 1.5rem);
   }
   .secondary-control-group {
@@ -1190,7 +1175,7 @@ h1#room-name {
 
 
 /* Keep at end of compiled css */
-.no-poiner-events {
+.no-pointer-events {
   pointer-events: none;
 }
 

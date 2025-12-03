@@ -5,8 +5,8 @@
  */
 
 // import { refresh, availableTimers, updateStatus } from '../main.js';
-import { appendUIInteractionJSON } from "../utilities.js";
 import { updateStatus } from "../orchestrator_request.js";
+import { dispatchStateChangeEvents } from "../utilities.js";
 
 let handleVolumeOngoing = false;
 
@@ -35,6 +35,21 @@ const availableTimers = [
 ];
 
 function setVolumeSliderState(slider, level) {
+  // cache original value for dispatchChangeEvents to compare
+  const origValue = slider.value;
+
+  // check for linked mute state
+  const channel = slider.getAttribute("data-channel");
+  if (channel !== "" && channel !== null) {
+    const linkedMute = document.querySelector(`.mute[data-channel=${channel}]`);
+    if (linkedMute) {
+      const muted =
+        linkedMute.getAttribute("data-value") === "true" ? true : false;
+      slider.setAttribute("data-muted", muted);
+    }
+  }
+
+  // set state for slider
   const color =
     slider.getAttribute("data-muted") === "true"
       ? "var(--slider-muted)"
@@ -49,6 +64,11 @@ function setVolumeSliderState(slider, level) {
   // handlers
   if (slider.hasAttribute("data-allow-events")) {
     slider.addEventListener("input", handleVolumeSlider);
+  }
+
+  // Alert modules with dependencies on this control's state
+  if (level !== origValue) {
+    dispatchStateChangeEvents(slider);
   }
 }
 
@@ -68,7 +88,7 @@ function handleVolumeSlider(e) {
     handleVolumeOngoing = true;
     const path = slider.getAttribute("data-path");
     const payload = path.replace(/<value>/, slider.value);
-    updateStatus(appendUIInteractionJSON(payload), function () {
+    updateStatus(payload, function () {
       handleVolumeOngoing = false;
     });
   } else {

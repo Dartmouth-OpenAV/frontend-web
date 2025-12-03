@@ -4,8 +4,11 @@
  *
  */
 import { updateStatus } from "../orchestrator_request.js";
-import { setVolumeSliderState } from "./volume_slider.js";
-import { followPath, appendUIInteractionJSON } from "../utilities.js";
+import {
+  disableControl,
+  enableControl,
+  dispatchStateChangeEvents,
+} from "../utilities.js";
 
 function setMuteButtonState(btn, state) {
   // everything is topsy turvy in mute land ...
@@ -20,7 +23,8 @@ function setMuteButtonState(btn, state) {
     btn.querySelector(".slash").classList.add("hidden");
   }
 
-  // data-* attributes
+  // Set data-* attributes; first cache original value for dispatchChangeEvents to compare
+  const origValue = btn.getAttribute("data-value") === "true" ? true : false;
   btn.setAttribute("data-value", state);
 
   // handlers
@@ -29,43 +33,29 @@ function setMuteButtonState(btn, state) {
     btn.addEventListener("touchstart", handleMuteButton);
   }
 
-  // look for linked volume sliders and tell them to update their state
-  if (btn.getAttribute("data-channel")) {
-    document
-      .querySelectorAll(
-        `.slider[data-channel="${btn.getAttribute("data-channel")}"]`,
-      )
-      .forEach((slider) => {
-        slider.setAttribute("data-muted", state);
-        setVolumeSliderState(slider, slider.value);
-      });
+  // Alert modules with dependencies on this control's state
+  if (state != origValue) {
+    dispatchStateChangeEvents(btn);
   }
 }
 
 function handleMuteButton(e) {
-  // block clicks
-  var btn = e.target;
-  btn.removeEventListener("click", handleMuteButton);
-  btn.removeEventListener("touchstart", handleMuteButton);
-  btn.removeAttribute("data-allow-events");
+  const btn = e.target;
 
-  // visual feedback
+  // block clicks and show visual feedback
+  disableControl(btn, handleMuteButton);
   const newValue = btn.getAttribute("data-value") === "true" ? false : true;
   setMuteButtonState(btn, newValue);
 
-  // callback
-  function reset(response) {
-    const pathAsObj = JSON.parse(path.replace(/<value>/, '""'));
-    let returnedState = followPath(pathAsObj, response);
-    btn.setAttribute("data-allow-events", "");
-    setMuteButtonState(btn, returnedState.value);
+  // callback for updateStatus
+  function reset() {
+    enableControl(btn, handleMuteButton);
   }
 
   // update backend
   const path = btn.getAttribute("data-path");
   const payload = path.replace(/<value>/, newValue);
-
-  updateStatus(appendUIInteractionJSON(payload), reset);
+  updateStatus(payload, reset);
 }
 
 // Export functions

@@ -5,11 +5,14 @@
  */
 
 import { updateStatus } from "../orchestrator_request.js";
-import { setDisplaySourceOptionState } from "./display_source_radio.js";
-import { followPath, appendUIInteractionJSON } from "../utilities.js";
+import {
+  disableControl,
+  enableControl,
+  dispatchStateChangeEvents,
+} from "../utilities.js";
 
 function setVideoMuteButtonState(btn, state) {
-  // when video is muted, color the button, show the slash, and change text to
+  // When video is muted, color the button, show the slash, and change text to
   if (state === true) {
     btn.classList.add("active");
     btn.querySelector(".slash").classList.remove("hidden");
@@ -20,7 +23,8 @@ function setVideoMuteButtonState(btn, state) {
     btn.querySelector(".button-label").innerHTML = "Hide video";
   }
 
-  // data-* attributes
+  // Set data-* attributes; first cache original value for dispatchChangeEvents to compare
+  const origValue = btn.getAttribute("data-value") === "true" ? true : false;
   btn.setAttribute("data-value", state);
 
   // handlers
@@ -29,45 +33,44 @@ function setVideoMuteButtonState(btn, state) {
     btn.addEventListener("touchstart", handleVideoMute);
   }
 
-  // ask linkedInputs to re-evaluate themselves
+  // check for state override from linked power button
   const channel = btn.getAttribute("data-channel");
-  if (channel) {
-    document
-      .querySelectorAll(
-        `.display-source-radio[data-channel='${channel}'] .radio-option`,
-      )
-      .forEach((input) => {
-        const currentState =
-          input.getAttribute("data-value") === "true" ? true : false;
-        setDisplaySourceOptionState(input, currentState);
-      });
+  const linkedPower = channel
+    ? document.querySelector(`.power-button[data-channel=${channel}]`)
+    : false;
+  if (linkedPower) {
+    const powerOn =
+      linkedPower.getAttribute("data-value") === "true" ? true : false;
+    if (powerOn) {
+      btn.classList.remove("invisible");
+    } else {
+      btn.classList.add("invisible");
+    }
+  }
+
+  // Alert modules with dependencies on this control's state
+  if (state != origValue) {
+    dispatchStateChangeEvents(btn);
   }
 }
 
 function handleVideoMute(e) {
   const btn = e.target;
+
+  // block clicks and show visual feedback
+  disableControl(btn, handleVideoMute);
   const newState = btn.getAttribute("data-value") === "true" ? false : true;
-  const path = btn.getAttribute("data-path");
-  const payload = path.replace(/<value>/, newState);
-
-  // block clicks
-  btn.removeEventListener("click", handleVideoMute);
-  btn.removeEventListener("touchstart", handleVideoMute);
-  btn.removeAttribute("data-allow-events");
-
-  // visual feedback
   setVideoMuteButtonState(btn, newState);
 
-  // callback
-  function reset(response) {
-    const pathAsObj = JSON.parse(path.replace(/<value>/, '""'));
-    const returnedState = followPath(pathAsObj, response);
-    btn.setAttribute("data-allow-events", "");
-    setVideoMuteButtonState(btn, returnedState.value);
+  // callback for updateStatus
+  function reset() {
+    enableControl(btn, handleVideoMute);
   }
 
   // update backend
-  updateStatus(appendUIInteractionJSON(payload), reset);
+  const path = btn.getAttribute("data-path");
+  const payload = path.replace(/<value>/, newState);
+  updateStatus(payload, reset);
 }
 
 // Export functions

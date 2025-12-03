@@ -14,17 +14,17 @@ If you want to run a frontend server separately, on a different machine for exam
 
 1. Start by making sure Docker is installed where you will be running the frontend server. Like the orchestrator, the frontend server runs in a Docker container. The image is based on `nginx` and simply serves static files (all the GUI rendering happens client-side).
 
-2. Run a Docker container with the `ghcr.io/dartmouth-openav/frontend-web` image, with port 80 exposed. You may optionally set a HOME_ORCHESTRATOR environment variable in the container (recommended), which will serve as a default for all clients. Example Docker Compose:
+2. Run a Docker container with the `ghcr.io/dartmouth-openav/frontend-web` image, with port 80 exposed. You may optionally set a DEFAULT_ORCHESTRATOR environment variable in the container (recommended), which will serve as a default for all clients. Example Docker Compose:
 ```
 services:
   nginx:
     image: ghcr.io/dartmouth-openav/frontend-web:latest
     environment:   
-      - HOME_ORCHESTRATOR=http://orchestrator.domain.edu
+      - DEFAULT_ORCHESTRATOR=http://orchestrator.domain.edu
     ports:
       - 8080:80
 ```
-If you don't set the HOME_ORCHESTRATOR variable, clients will have to specify an "orchestrator" URL param to load the GUI.
+If you don't set the DEFAULT_ORCHESTRATOR variable, clients will have to specify an "orchestrator" URL param to load the GUI.
 
 3. You should now be able to load a GUI in your browser at http://localhost:8080. To tell the frontend server what system interface to load, provide a "system" param in the URL, eg.: http://localhost:8080?system=test-room . The "system" value should correspond to the ID of a configuration file in the config repo you specified for your [Orchestrator(s)](https://github.com/Dartmouth-OpenAV/orchestrator).
 
@@ -44,7 +44,7 @@ services:
     volumes: 
       - ./public/:/usr/share/nginx/html
     environment:   
-      - HOME_ORCHESTRATOR=http://localhost:81
+      - DEFAULT_ORCHESTRATOR=http://localhost:81
     ports:
       - 8080:80
 ```

@@ -4,7 +4,11 @@
  *
  */
 import { updateStatus } from "../orchestrator_request.js";
-import { followPath, appendUIInteractionJSON } from "../utilities.js";
+import {
+  disableControl,
+  enableControl,
+  dispatchStateChangeEvents,
+} from "../utilities.js";
 
 function setButtonState(btn, state, handler) {
   if (state === true && btn.getAttribute("data-override") !== "true") {
@@ -13,7 +17,8 @@ function setButtonState(btn, state, handler) {
     btn.classList.remove("active");
   }
 
-  // data-* attributes
+  // Set data-* attributes; first cache original value for dispatchChangeEvents to compare
+  const origValue = btn.getAttribute("data-value") === "true" ? true : false;
   btn.setAttribute("data-value", state);
 
   // handlers
@@ -21,31 +26,30 @@ function setButtonState(btn, state, handler) {
     btn.addEventListener("click", handler);
     btn.addEventListener("touchstart", handler);
   }
+
+  // Alert modules with dependencies on this control's state
+  if (state != origValue) {
+    dispatchStateChangeEvents(btn);
+  }
 }
 
 function handleToggleButton(e) {
-  // block clicks
-  var btn = e.target;
-  btn.removeEventListener("click", handleToggleButton);
-  btn.removeEventListener("touchstart", handleToggleButton);
-  btn.removeAttribute("data-allow-events");
+  const btn = e.target;
 
-  // visual feedback
+  // block clicks and show visual feedback
+  disableControl(btn, handleToggleButton);
   const newState = btn.getAttribute("data-value") === "true" ? false : true;
   setButtonState(btn, newState, handleToggleButton);
 
-  // callback
-  function reset(response) {
-    const pathAsObj = JSON.parse(path.replace(/<value>/, '""'));
-    let returnedState = followPath(pathAsObj, response);
-    btn.setAttribute("data-allow-events", "");
-    setButtonState(btn, returnedState.value, handleToggleButton);
+  // callback for updateStatus
+  function reset() {
+    enableControl(btn, handleToggleButton);
   }
 
   // update backend
   const path = btn.getAttribute("data-path");
   const payload = path.replace(/<value>/, newState);
-  updateStatus(appendUIInteractionJSON(payload), reset);
+  updateStatus(payload, reset);
 }
 
 // Export functions

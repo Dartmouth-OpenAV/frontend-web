@@ -4,6 +4,7 @@ import { updateStatus } from "../../js/orchestrator_request.js";
 import {
   bumpMainContentForBanners,
   registerStateChangeEvent,
+  countdown
 } from "../../js/utilities.js";
 import { attachSharedModalListeners, openModal } from "../../js/modals.js";
 
@@ -16,12 +17,38 @@ import shareScreenModal from "./components/share_screen_modal.html";
 import sharingKeyTemplate from "./components/sharing_key.html";
 import "./zoom.css";
 
-let zoomData;
+const leaveWarningTime = 60; // seconds
+let zoomData, countdownTimeoutId;
 
 function showBanner() {
   const banner = document.getElementById("zoom-room-notification");
   banner.classList.remove("hidden");
   bumpMainContentForBanners();
+}
+
+function toggleSIP(e = null) {
+  const label = document.querySelector(
+    "#manual-zoom-prompt label[for=meeting_id]",
+  );
+  const input = document.querySelector(
+    "#manual-zoom-prompt input[name=meeting_id]",
+  );
+  const activeButton = e
+    ? e.target
+    : document.querySelector("#sip-toggle button[value=zoom]");
+  if (e?.target.value === "sip") {
+    label.innerHTML = "SIP ID:";
+    input.setAttribute("inputmode", "text");
+  } else {
+    label.innerHTML = "Meeting ID:";
+    input.setAttribute("inputmode", "numeric");
+  }
+
+  input.focus();
+  activeButton.parentElement
+    .querySelector(".active")
+    .classList.remove("active");
+  activeButton.classList.add("active");
 }
 
 function joinZoomMeeting(meetingId, password, callback = null) {
@@ -46,8 +73,14 @@ function joinZoomMeeting(meetingId, password, callback = null) {
   });
 }
 
-function leaveZoomMeeting(callback = null, userInput = true) {
-  // User feedback: update banner
+function leaveZoomMeeting(userInput = true) {
+  // Block further leave attempts from leave modal
+  const submitBtn = document.querySelector(
+    "#leave-zoom-prompt button[name=leave-meeting]",
+  );
+  submitBtn.removeEventListener("click", leaveZoomMeeting);
+
+  // Visual feedback: update banner
   const banner = document.getElementById("zoom-room-notification");
   const currentMeeting = zoomData.meeting?.info?.meeting_name
     ? zoomData.meeting.info.meeting_name
@@ -59,7 +92,7 @@ function leaveZoomMeeting(callback = null, userInput = true) {
   leaveBtn.classList.add("hidden");
   showBanner();
 
-  // add a hook for powerHandler to see the leave attempt initiated
+  // Add a hook for powerHandler to see the leave attempt initiated
   banner.setAttribute("data-leaving-meeting", "");
 
   // Post leave request to orchestrator
@@ -68,16 +101,48 @@ function leaveZoomMeeting(callback = null, userInput = true) {
       leave: true,
     },
   });
-  updateStatus(
-    payload,
-    () => {
-      // call callback (reset)
-      if (callback) {
-        callback();
-      }
-    },
-    userInput,
+  updateStatus(payload, cleanupLeaveZoomPrompt, userInput);
+}
+
+// Making this snippet reusable so that Manual Meeting join can share
+// with Suggested Meeting dismiss
+function openManualJoinForm() {
+  // clear old form input
+  const form = document.getElementById("join-meeting-by-id");
+  form.reset(); // belt and suspenders
+
+  // re-attach form submit listener
+  form.addEventListener("submit", handleManualJoinSubmit);
+
+  // make sure SIP toggle is on default value (Zoom)
+  toggleSIP();
+
+  openModal(null, "manual-zoom-prompt");
+}
+
+// Making this snippet reusable to share with "Leave" button in status banner
+function openLeaveZoomPrompt() {
+  // Re-attach submit listener
+  const modal = document.getElementById("leave-zoom-prompt");
+  modal
+    .querySelector("button[name=leave-meeting]")
+    .addEventListener("click", leaveZoomMeeting);
+
+  // Start countdown with default action of leaving meeting
+  clearInterval(countdownTimeoutId);
+  countdownTimeoutId = countdown(
+    modal.querySelector(".counter"),
+    leaveWarningTime,
+    leaveZoomMeeting,
   );
+
+  openModal(null, "leave-zoom-prompt");
+}
+
+function cleanupLeaveZoomPrompt() {
+  const modal = document.getElementById("leave-zoom-prompt");
+  modal.classList.add("hidden");
+  clearInterval(countdownTimeoutId);
 }
 
 function handleSuggestedJoinSubmit() {
@@ -118,102 +183,48 @@ function handleManualJoinSubmit(e) {
   joinZoomMeeting(meetingId, password, reset);
 }
 
-function handleLeaveSubmit() {
-  // remove submit listener
-  const modal = document.getElementById("leave-zoom-prompt");
-  const submitBtn = modal.querySelector("button[name=leave-meeting]"); // TO DO: refactor to use form/submit?
-  submitBtn.removeEventListener("click", handleLeaveSubmit);
+function handleZoomMeetingPromptClick(e) {
+  // Open one of three prompts based on Zoom state:
+  const meetingJoined =
+    zoomData.meeting?.status === "in_meeting" ? true : false;
 
-  // callback for updateStatus
-  function reset() {
-    modal.classList.add("hidden");
+  // Suggested meeting join:
+  if (
+    !meetingJoined &&
+    zoomData.suggested_meeting?.id &&
+    zoomData.suggested_meeting?.password
+  ) {
+    // update modal text
+    const modal = document.getElementById("scheduled-zoom-prompt");
+    modal.querySelector(".meeting-name").textContent =
+      zoomData.suggested_meeting.name;
+
+    // re-attach submit listener
+    modal
+      .querySelector("button[name=join-suggested-meeting]")
+      .addEventListener("click", handleSuggestedJoinSubmit);
+
+    openModal(null, "scheduled-zoom-prompt");
+  }
+  // Manual meeting join:
+  else if (!meetingJoined) {
+    openManualJoinForm(); // using a global function instead of inline so that Suggested Meeting dismiss can run this routine
+  }
+  // Leave meeting prompt (first check that the Zoom button is already selected; otherwise just do nothing)
+  else if (
+    e.currentTarget.getAttribute("data-value") === "true" &&
+    e.currentTarget.getAttribute("data-override") !== "true"
+  ) {
+    openLeaveZoomPrompt();
   }
 
-  leaveZoomMeeting(reset);
+  // Disambiguate with other Zoom inputs
+  selectZoomInput(e.currentTarget, true);
 }
 
-// Making this snippet reusable so that Manual Meeting join can share
-// with Suggested Meeting dismiss
-function openManualJoinForm() {
-  // clear old form input
-  const form = document.getElementById("join-meeting-by-id");
-  form.reset(); // belt and suspenders
-
-  // re-attach form submit listener
-  form.addEventListener("submit", handleManualJoinSubmit);
-
-  // make sure SIP toggle is on default value (Zoom)
-  toggleSIP();
-
-  openModal(null, "manual-zoom-prompt");
-}
-
-// Making this snippet reusable to share with "Leave" button in status banner
-function openLeaveZoomPrompt() {
-  // re-attach submit listeners etc ...
-  const modal = document.getElementById("leave-zoom-prompt");
-  modal
-    .querySelector("button[name=leave-meeting]")
-    .addEventListener("click", handleLeaveSubmit);
-
-  openModal(null, "leave-zoom-prompt");
-}
-
-// Check for other Zoom inputs (eg. a Share Screen button) and set data-override
-// to true so they will not display as active
-function selectZoomInput(input, newSelection = false) {
-  // check if there is another Zoom input in the same radio
-  const radioGroup = input.parentElement;
-  const zoomOpts = radioGroup.querySelectorAll(
-    "[data-zoom-meeting-prompt], [data-zoom-share-prompt]",
-  );
-  if (zoomOpts.length > 1) {
-    // De-select all Zoom inputs
-    radioGroup
-      .querySelectorAll("[data-zoom-meeting-prompt], [data-zoom-share-prompt]")
-      .forEach((opt) => {
-        opt.setAttribute("data-override", true);
-        opt.classList.remove("active");
-        opt.removeAttribute("data-zoom-last-selected");
-      });
-
-    // select the requested input
-    input.setAttribute("data-zoom-last-selected", "");
-
-    // check for potential conflict with a linked power or video_mute button before applying data-override
-    if (newSelection) {
-      const channel = radioGroup.getAttribute("data-channel");
-      const linkedPower = document.querySelector(
-        `.power-button[data-channel=${channel}]`,
-      );
-      const linkedPause = document.querySelector(
-        `.pause-button[data-channel=${channel}]`,
-      );
-      if (
-        (!linkedPower || linkedPower.getAttribute("data-value") === "true") &&
-        (!linkedPause || linkedPause.getAttribute("data-value") !== "true")
-      ) {
-        input.setAttribute("data-override", false);
-      }
-    } else {
-      input.setAttribute("data-override", false);
-    }
-  }
-
-  // finally, update visually
-  if (input.getAttribute("data-override") !== "true") {
-    input.classList.add("active");
-  }
-}
-
-function healSelectedInputs() {
-  document
-    .querySelectorAll(
-      "[data-zoom-last-selected][data-value=true][data-override=false]",
-    )
-    .forEach((input) => {
-      selectZoomInput(input);
-    });
+function handleZoomSharePromptClick(e) {
+  openModal(null, "share-screen-zoom-prompt");
+  selectZoomInput(e.currentTarget, true);
 }
 
 function handleZoomRoomWarning(e) {
@@ -286,6 +297,63 @@ function checkForZoomRoomWarnings() {
   }
 
   bumpMainContentForBanners();
+}
+
+// Check for other Zoom inputs (eg. a Share Screen button) and set data-override
+// to true so they will not display as active
+function selectZoomInput(input, newSelection = false) {
+  // check if there is another Zoom input in the same radio
+  const radioGroup = input.parentElement;
+  const zoomOpts = radioGroup.querySelectorAll(
+    "[data-zoom-meeting-prompt], [data-zoom-share-prompt]",
+  );
+  if (zoomOpts.length > 1) {
+    // De-select all Zoom inputs
+    radioGroup
+      .querySelectorAll("[data-zoom-meeting-prompt], [data-zoom-share-prompt]")
+      .forEach((opt) => {
+        opt.setAttribute("data-override", true);
+        opt.classList.remove("active");
+        opt.removeAttribute("data-zoom-last-selected");
+      });
+
+    // select the requested input
+    input.setAttribute("data-zoom-last-selected", "");
+
+    // check for potential conflict with a linked power or video_mute button before applying data-override
+    if (newSelection) {
+      const channel = radioGroup.getAttribute("data-channel");
+      const linkedPower = document.querySelector(
+        `.power-button[data-channel=${channel}]`,
+      );
+      const linkedPause = document.querySelector(
+        `.pause-button[data-channel=${channel}]`,
+      );
+      if (
+        (!linkedPower || linkedPower.getAttribute("data-value") === "true") &&
+        (!linkedPause || linkedPause.getAttribute("data-value") !== "true")
+      ) {
+        input.setAttribute("data-override", false);
+      }
+    } else {
+      input.setAttribute("data-override", false);
+    }
+  }
+
+  // finally, update visually
+  if (input.getAttribute("data-override") !== "true") {
+    input.classList.add("active");
+  }
+}
+
+function healSelectedInputs() {
+  document
+    .querySelectorAll(
+      "[data-zoom-last-selected][data-value=true][data-override=false]",
+    )
+    .forEach((input) => {
+      selectZoomInput(input);
+    });
 }
 
 function displayZoomStatus(e) {
@@ -408,75 +476,6 @@ function displayZoomStatus(e) {
   }
 }
 
-function handleZoomMeetingPromptClick(e) {
-  // Open one of three prompts based on Zoom state:
-  const meetingJoined =
-    zoomData.meeting?.status === "in_meeting" ? true : false;
-
-  // Suggested meeting join:
-  if (
-    !meetingJoined &&
-    zoomData.suggested_meeting?.id &&
-    zoomData.suggested_meeting?.password
-  ) {
-    // update modal text
-    const modal = document.getElementById("scheduled-zoom-prompt");
-    modal.querySelector(".meeting-name").textContent =
-      zoomData.suggested_meeting.name;
-
-    // re-attach submit listener
-    modal
-      .querySelector("button[name=join-suggested-meeting]")
-      .addEventListener("click", handleSuggestedJoinSubmit);
-
-    openModal(null, "scheduled-zoom-prompt");
-  }
-  // Manual meeting join:
-  else if (!meetingJoined) {
-    openManualJoinForm(); // using a global function instead of inline so that Suggested Meeting dismiss can run this routine
-  }
-  // Leave meeting prompt (first check that the Zoom button is already selected; otherwise just do nothing)
-  else if (
-    e.currentTarget.getAttribute("data-value") === "true" &&
-    e.currentTarget.getAttribute("data-override") !== "true"
-  ) {
-    openLeaveZoomPrompt();
-  }
-
-  // Disambiguate with other Zoom inputs
-  selectZoomInput(e.currentTarget, true);
-}
-
-function handleZoomSharePromptClick(e) {
-  openModal(null, "share-screen-zoom-prompt");
-  selectZoomInput(e.currentTarget, true);
-}
-
-function toggleSIP(e = null) {
-  const label = document.querySelector(
-    "#manual-zoom-prompt label[for=meeting_id]",
-  );
-  const input = document.querySelector(
-    "#manual-zoom-prompt input[name=meeting_id]",
-  );
-  const activeButton = e
-    ? e.target
-    : document.querySelector("#sip-toggle button[value=zoom]");
-  if (e?.target.value === "sip") {
-    label.innerHTML = "SIP ID:";
-    input.setAttribute("inputmode", "text");
-  } else {
-    label.innerHTML = "Meeting ID:";
-    input.setAttribute("inputmode", "numeric");
-  }
-
-  input.focus();
-  activeButton.parentElement
-    .querySelector(".active")
-    .classList.remove("active");
-  activeButton.classList.add("active");
-}
-
 function initiateZoomGUI() {
   // make sure elements only get initialized once, and listeners only get attached if zoom_room configured
   if (globals.getState()?.zoom_room) {
@@ -554,6 +553,10 @@ function initiateZoomGUI() {
     // Register state change callbacks for Zoom inputs and any linked Power buttons
     function powerHandler(e) {
       const triggerBtn = e.detail;
+      const banner = document.getElementById("zoom-room-notification");
+      const meetingJoined = banner.hasAttribute("data-meeting-joined");
+      const leaveInitiated = banner.hasAttribute("data-leaving-meeting");
+
       // On power off, leave Zoom. In case of multi-screen rooms, make sure no other
       // video output is on Zoom before leaving meeting
       const activeZoomInputs = document.querySelectorAll(
@@ -561,19 +564,21 @@ function initiateZoomGUI() {
       );
       if (
         triggerBtn.getAttribute("data-value") === "false" &&
-        activeZoomInputs.length === 0
+        activeZoomInputs.length === 0 &&
+        meetingJoined &&
+        !leaveInitiated
       ) {
-        const banner = document.getElementById("zoom-room-notification");
-        const meetingJoined = banner.hasAttribute("data-meeting-joined");
-        const leaveInitiated = banner.hasAttribute("data-leaving-meeting");
-        if (meetingJoined && !leaveInitiated) {
-          leaveZoomMeeting(null, false); // pass flag for non-user initiated update
-        }
+        leaveZoomMeeting(false); // pass flag for non-user initiated update
       }
 
       // On power on, disambiguate any Zoom Meeting/Screen Share buttons
       if (triggerBtn.getAttribute("data-value") === "true") {
         healSelectedInputs();
+
+        // Power flap detection: If power comes back on after leave initiated, abort the leave
+        if (leaveInitiated) {
+          clearInterval(countdownTimeoutId);
+        }
       }
     }
 
@@ -599,6 +604,19 @@ function initiateZoomGUI() {
             linkedPower,
             [document.body],
             powerHandler,
+          );
+        }
+
+        // Look for linked video_mute buttons, which should heal input state on unmute
+        const linkedPause = channel
+          ? document.querySelector(`.pause-button[data-channel=${channel}]`)
+          : null;
+        if (linkedPause) {
+          registerStateChangeEvent(
+            "video_mute_updated",
+            linkedPause,
+            [input.parentElement],
+            healSelectedInputs,
           );
         }
       });
@@ -629,12 +647,7 @@ function initiateZoomGUI() {
       });
     document
       .querySelector("#leave-zoom-prompt button.dismiss-modal")
-      .addEventListener("click", () => {
-        // remove manual-zoom-prompt submit handler
-        document
-          .querySelector("#leave-zoom-prompt button[name=leave-meeting]")
-          .removeEventListener("click", handleLeaveSubmit);
-      });
+      .addEventListener("click", cleanupLeaveZoomPrompt);
 
     // Focus listener for "join meeting" form inputs
     document

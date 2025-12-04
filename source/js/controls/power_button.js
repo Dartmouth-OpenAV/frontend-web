@@ -15,13 +15,13 @@ import {
   followPath,
   mergeJSON,
   countdown,
-  countdownTimeoutId,
   useProgressBar,
   disableControl,
   enableControl,
 } from "../utilities.js";
 
 const shutdownWarningTime = 60; // seconds
+let countdownTimeoutId;
 
 function setPowerState(powerBtn, state) {
   setButtonState(powerBtn, state, handleTogglePower);
@@ -46,7 +46,6 @@ function handleTogglePower(e) {
     : false;
 
   const confirmation = document.getElementById("shutdown-confirmation");
-  let shutdownTimeoutId;
 
   // Note, because some touches on this button only launch a modal, listeners are
   // removed only when a power action is actually taken (in sendPowerUpdate)
@@ -54,8 +53,7 @@ function handleTogglePower(e) {
   // internal functions
   function cleanupConfirmationModal() {
     // prevent default shutdown
-    clearTimeout(shutdownTimeoutId);
-    clearTimeout(countdownTimeoutId);
+    clearInterval(countdownTimeoutId);
 
     // hide the modal
     confirmation.classList.add("hidden");
@@ -220,13 +218,22 @@ function handleTogglePower(e) {
   }
   // shutdown: show confirmation modal
   else {
-    // set the confirmation screen projector counter and name
-    confirmation.querySelector(".counter").innerHTML = shutdownWarningTime;
-    countdown(confirmation.querySelector(".counter"));
+    // Reset counter
+    clearInterval(countdownTimeoutId);
+    // confirmation.querySelector(".counter").innerHTML = shutdownWarningTime;
+  
+    // Launch countdown timer
+    countdownTimeoutId = countdown(
+      confirmation.querySelector(".counter"),
+      shutdownWarningTime,
+      sendPowerUpdate, // default action if countdown finishes
+    );
+
+    // Reset projector name in modal
     confirmation.querySelector(".projector-name").textContent =
       btn.getAttribute("data-channel-name");
 
-    // attach event listeners to confirm and cancel buttons
+    // Attach event listeners to confirm and cancel buttons
     confirmation
       .querySelector("button[name=shutdown]")
       .addEventListener("click", sendPowerUpdate);
@@ -242,10 +249,6 @@ function handleTogglePower(e) {
 
     // reveal the modal
     confirmation.classList.remove("hidden");
-
-    // Default action: shutdown after 60 seconds
-    var duration = shutdownWarningTime * 1000 + 100;
-    shutdownTimeoutId = setTimeout(sendPowerUpdate, duration);
   }
 }
 

@@ -28,52 +28,31 @@ let autoshutdownTriggered = false;
 const autoshutdownWarningTime = 600; // seconds
 let countdownTimeoutId;
 
-// environmentSensingData -- environment_sensing object from getState response
 function checkForAutoshutdown() {
-  let environmentSensingData = {};
-  if (globals.getState()?.environment_sensing) {
-    environmentSensingData = globals.getState()?.environment_sensing;
-  }
+  const environmentSensingData = globals.getState()?.environment_sensing
+    ? globals.getState()?.environment_sensing
+    : false;
 
   // first, check that there are any displays that even need to be shutdown
   if (
     environmentSensingData &&
     document.querySelectorAll(".power-button[data-value=true]").length > 0
   ) {
-    let occupancyChecks = [];
     let occupancyDetected = false;
 
-    // extract all occupancy check values into an array
-    function recurseThroughObject(obj) {
-      for (var k in obj) {
-        if (typeof obj[k] == "object" && obj[k] !== null) {
-          recurseThroughObject(obj[k]);
-        } else if (k == "occupancy_detected") {
-          occupancyChecks.push(obj[k]);
-        }
-      }
-    }
-
-    // check for occupancy detected
-    recurseThroughObject(environmentSensingData);
-    for (let i = 0; i < occupancyChecks.length; i++) {
-      // !! warning !!
-      //   if a device returns "error" (or some other string data that
-      //   isn't true or false) we want to default to assuming occupancy
-      //   is detected. It is essential that we use the !==false check here
-      if (occupancyChecks[i] !== false) {
+    // environmentSensing endpoint can include any number of checks,
+    // each of which should have an "occupancy_detected" GET defined.
+    // Note: If the check returns an error we want to assume occupancy
+    // to be cautious, hence the !==false check
+    for (const occupancyCheck in environmentSensingData) {
+      if (environmentSensingData[occupancyCheck].occupancy_detected !== false) {
         occupancyDetected = true;
-        break;
       }
     }
 
-    // if no occupancy detected, and autoshutdown has not yet been triggered,
+    // If no occupancy detected, and autoshutdown has not yet been triggered,
     // display the autoshutdown warning
-    if (
-      !autoshutdownTriggered &&
-      occupancyChecks.length >= 1 &&
-      !occupancyDetected
-    ) {
+    if (!autoshutdownTriggered && !occupancyDetected) {
       autoshutdownTriggered = true;
       const autoshutdownWarningModal = document.getElementById(
         "autoshutdown-warning",

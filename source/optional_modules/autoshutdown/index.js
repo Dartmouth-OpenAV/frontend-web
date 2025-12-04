@@ -9,6 +9,7 @@ import {
   sendUIInteractionUpdate,
   countdown,
   disableControl,
+  enableControl,
   useProgressBar,
   throwClientError,
 } from "../../js/utilities.js";
@@ -123,13 +124,10 @@ function autoshutdown() {
     }
 
     function allowEvents() {
-      // events will actually get attached in updateAllControls
-      btn.setAttribute("data-allow-events", "");
-      if (linkedInputs) {
-        linkedInputs.forEach((inputBtn) => {
-          inputBtn.setAttribute("data-allow-events", "");
-        });
-      }
+      enableControl(btn, handleTogglePower);
+      linkedInputs.forEach((input) => {
+        enableControl(input);
+      });
     }
 
     // update backend

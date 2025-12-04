@@ -12,7 +12,7 @@ const MODAL_TIMEOUT_DEFAULT = 5 * 60000; // 5 minutes as milliseconds
 let modalTimeoutId;
 let timeoutDuration = MODAL_TIMEOUT_DEFAULT;
 
-function openModal(e = null, modalId = null) {
+function openModal(e = null, modalId = null, userInput = true) {
   // open requested modal
   const linkedModalId = e ? e.target.getAttribute("data-modal") : modalId;
   const linkedModal = document.getElementById(linkedModalId);
@@ -24,7 +24,9 @@ function openModal(e = null, modalId = null) {
     : MODAL_TIMEOUT_DEFAULT;
   timeoutModals();
 
-  sendUIInteractionUpdate();
+  if (userInput) {
+    sendUIInteractionUpdate();
+  }
 }
 
 function closeModal(e) {

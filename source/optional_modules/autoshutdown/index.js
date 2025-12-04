@@ -36,7 +36,10 @@ function checkForAutoshutdown() {
   }
 
   // first, check that there are any displays that even need to be shutdown
-  if (document.querySelectorAll(".power-button[data-value=true]").length > 0) {
+  if (
+    environmentSensingData &&
+    document.querySelectorAll(".power-button[data-value=true]").length > 0
+  ) {
     let occupancyChecks = [];
     let occupancyDetected = false;
 
@@ -84,7 +87,7 @@ function checkForAutoshutdown() {
         .querySelector("button[name=cancel]")
         .addEventListener("touchstart", handleCancelAutoshutdown);
 
-      openModal(null, "autoshutdown-warning");
+      openModal(null, "autoshutdown-warning", false); // userInput = false
 
       // Default action: shutdown after 600 seconds
       const countdownSpan = autoshutdownWarningModal.querySelector(".counter");

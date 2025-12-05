@@ -103,7 +103,7 @@ function handlePowerOn(e) {
       )
     : false;
 
-  if (selectedZoomInputs) {
+  if (selectedZoomInputs && selectedZoomInputs.length > 0) {
     const radioIsSetToPrivacy = targetBtn.parentElement.querySelector(
       ".radio-option[data-option=privacy][data-value=true]",
     )

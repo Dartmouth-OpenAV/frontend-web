@@ -16,7 +16,9 @@ import bluetoothModal from "./components/bluetooth_modal.html";
 import bluetoothBanner from "./components/bluetooth_banner.html";
 import "./bluetooth.css";
 
-let pairingTimeout;
+const pairingTime = 60; // seconds
+let modalPairingTimeoutId;
+let bannerPairingTimeoutId;
 let modalDismissTimeout;
 let guiInitiated = false;
 
@@ -24,7 +26,6 @@ let guiInitiated = false;
 function initiateBluetoothGUI() {
   if (!guiInitiated && globals.getState()?.bluetooth) {
     // Initiate zoomData object with globals.state (which should be assigned before ui_ready fires)
-    //bluetoothData = globals.getState()?.bluetooth;
 
     const bluetoothIconHTML = document.getElementById(
       "bluetooth-icon-template",
@@ -163,13 +164,16 @@ function updateDeviceStatus(e) {
     if (disconnectBtn) {
       disconnectBtn.classList.remove("hidden");
     }
-    clearTimeout(pairingTimeout);
+    clearInterval(modalPairingTimeoutId);
+    clearInterval(bannerPairingTimeoutId);
+    modalPairingTimeoutId = null;
+    bannerPairingTimeoutId = null;
     // set timer for 5 seconds before closing modal
     modalDismissTimeout = setTimeout(() => {
       hideBluetoothModal();
       modalDismissTimeout = null;
     }, 5000);
-  } else if (bluetoothInfo?.status == "IDLE" && !pairingTimeout) {
+  } else if (bluetoothInfo?.status == "IDLE" && !modalPairingTimeoutId) {
     // Resets modal and banner
     resetModalState();
   }
@@ -185,7 +189,7 @@ function showBluetoothModal() {
 
 function hideBluetoothModal() {
   const modal = document.getElementById("bluetooth-pairing");
-  clearTimeout(modalDismissTimeout);
+  clearInterval(modalDismissTimeout);
   if (modal) {
     modal.classList.add("hidden");
   }
@@ -248,14 +252,12 @@ function startPairing() {
       console.log("Error starting pairing");
     }
   });
+}
 
-  // Set timeout for the pairing process (60 seconds)
-  pairingTimeout = setTimeout(() => {
-    resetModalState();
-    hideBluetoothBanner();
-    disconnectPairing();
-    pairingTimeout = null;
-  }, 60000);
+function timeoutCallback() {
+  resetModalState();
+  hideBluetoothBanner();
+  disconnectPairing();
 }
 
 function disconnectPairing() {
@@ -289,25 +291,20 @@ function startBluetoothCountdowns() {
   );
   cancelButton.classList.remove("hidden");
 
-  // Set both counters to 60 seconds
-  modalCounterDiv.innerHTML = 60;
-  bannerCounterDiv.innerHTML = 60;
-
   // Show modal countdown. Start modal and banner countdowns.
   modalCountdownElement.classList.remove("hidden");
-  countdown(modalCounterDiv);
-  countdown(bannerCounterDiv);
+  modalPairingTimeoutId = countdown(
+    modalCounterDiv,
+    pairingTime,
+    timeoutCallback,
+  );
+  bannerPairingTimeoutId = countdown(bannerCounterDiv, pairingTime);
 }
 
 function cancelBluetoothCountdowns() {
   const modalCountdownElement = document.getElementById(
     "bluetooth-pairing-countdown",
   );
-  const modalCounterDiv = modalCountdownElement.querySelector(".counter");
-  const bannerCountdownElement = document.getElementById(
-    "bluetooth-status-notification",
-  );
-  const bannerCounterDiv = bannerCountdownElement.querySelector(".counter");
 
   // Hide cancel button
   const cancelButton = document.getElementById(
@@ -316,12 +313,10 @@ function cancelBluetoothCountdowns() {
   cancelButton.classList.add("hidden");
 
   // Stop timeout to automatically reset the modal and banner
-  clearTimeout(pairingTimeout);
+  clearInterval(modalPairingTimeoutId);
+  clearInterval(bannerPairingTimeoutId);
+  modalPairingTimeoutId = null;
   modalCountdownElement.classList.add("hidden");
-
-  // Set counters to 0 to trigger countdown loop to stop
-  modalCounterDiv.innerHTML = 0;
-  bannerCounterDiv.innerHTML = 0;
 }
 
 // Reset functions
@@ -378,9 +373,8 @@ function resetBluetoothBanner() {
   const disconnectBtn = document
     .getElementById("bluetooth-status-notification")
     .querySelector("button[name=disconnect-bluetooth]");
-  if (bluetoothBanner) {
-    bluetoothBanner.classList.add("hidden");
-  }
+
+  hideBluetoothBanner();
   if (bannerStatusMessage) {
     bannerStatusMessage.classList.add("hidden");
   }

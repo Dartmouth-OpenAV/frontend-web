@@ -578,8 +578,8 @@ function initiateZoomGUI() {
         healSelectedInputs();
 
         // Power flap detection: If power comes back on after leave initiated, abort the leave
-        if (leaveInitiated) {
-          clearInterval(countdownTimeoutId);
+        if (countdownTimeoutId) {
+          cleanupLeaveZoomPrompt();
         }
       }
     }

@@ -120,8 +120,10 @@ function openManualJoinForm() {
   openModal(null, "manual-zoom-prompt");
 }
 
-// Making this snippet reusable to share with "Leave" button in status banner
-function openLeaveZoomPrompt() {
+// Making this snippet reusable to share with "Leave" button in status banner.
+// Need the optional userInput arg so that when power off triggers Zoom leave
+// the leave can be flagged as non-user
+function openLeaveZoomPrompt(userInput = true) {
   // Re-attach submit listener
   const modal = document.getElementById("leave-zoom-prompt");
   modal
@@ -133,7 +135,7 @@ function openLeaveZoomPrompt() {
   countdownTimeoutId = countdown(
     modal.querySelector(".counter"),
     leaveWarningTime,
-    leaveZoomMeeting,
+    () => leaveZoomMeeting(userInput),
   );
 
   openModal(null, "leave-zoom-prompt");
@@ -568,7 +570,7 @@ function initiateZoomGUI() {
         meetingJoined &&
         !leaveInitiated
       ) {
-        leaveZoomMeeting(false); // pass flag for non-user initiated update
+        openLeaveZoomPrompt(false); // pass flag for non-user initiated update
       }
 
       // On power on, disambiguate any Zoom Meeting/Screen Share buttons
@@ -576,8 +578,8 @@ function initiateZoomGUI() {
         healSelectedInputs();
 
         // Power flap detection: If power comes back on after leave initiated, abort the leave
-        if (leaveInitiated) {
-          clearInterval(countdownTimeoutId);
+        if (countdownTimeoutId) {
+          cleanupLeaveZoomPrompt();
         }
       }
     }

@@ -3,8 +3,6 @@ import { updateStatus } from "../../js/orchestrator_request.js";
 import { registerStateChangeEvent } from "../../js/utilities.js";
 import { globals } from "../../js/globals.js";
 let guiInitiated = false;
-let zoomInputActive = false;
-let powerActive = false;
 
 function initiateCameraIntegration() {
   // make sure elements only get initialized once
@@ -25,7 +23,15 @@ function initiateCameraIntegration() {
         "power_updated",
         powerButton,
         [...document.querySelectorAll("[data-camera-power-false]")],
-        handlePowerSelected,
+        handlePowerOff,
+      );
+    });
+    document.querySelectorAll(".power-button").forEach((powerButton) => {
+      registerStateChangeEvent(
+        "power_updated",
+        powerButton,
+        [...document.querySelectorAll("[data-camera-zoom-true]")],
+        handlePowerOn,
       );
     });
     guiInitiated = true;
@@ -34,25 +40,76 @@ function initiateCameraIntegration() {
 
 function handleZoomSelected(e) {
   // If Zoom is turned on, set the cameras to default preset unless another preset is already selected
-  const triggerBtn = e.detail;
-  const targetBtn = e.target;
+  const triggerBtn = e.detail; // zoom input button
+  const targetBtn = e.target; // camera preset button
   // data-value: false means Zoom input is not selected
   // data-override: true means something is hiding the video output
   if (
     triggerBtn.getAttribute("data-override") === "true" ||
     triggerBtn.getAttribute("data-value") === "false"
   ) {
-    zoomInputActive = false;
     return;
   }
-  if (zoomInputActive === false) {
-    const targetBtnParent = e.target.parentElement;
-    const radioIsSetToPrivacy = targetBtnParent.querySelector(
+  const targetBtnParent = e.target.parentElement;
+  const radioIsSetToPrivacy = targetBtnParent.querySelector(
+    ".radio-option[data-option=privacy][data-value=true]",
+  )
+    ? true
+    : false;
+  const noPresetSelected = targetBtnParent.querySelector(".radio-option.active")
+    ? false
+    : true;
+  if (radioIsSetToPrivacy || noPresetSelected) {
+    const payload = targetBtn
+      .getAttribute("data-path")
+      .replace(/<value>/, true);
+    updateStatus(payload, null, false);
+  }
+}
+
+function handlePowerOff(e) {
+  // If last power is turned off, set the cameras to called preset
+  const triggerBtn = e.detail;
+  const targetBtn = e.target;
+  if (triggerBtn.getAttribute("data-value") === "true") {
+    return;
+  }
+  const allPowerOff =
+    document.querySelectorAll(`.power-button .active`).length === 0;
+  // If recording doesn't exist OR is not active AND all power buttons are off, set the cameras to called preset
+  if (
+    (!Object.hasOwn(globals.getState(), "recording") ||
+      globals.getState().recording?.status === false) &&
+    allPowerOff === true
+  ) {
+    const payload = targetBtn
+      .getAttribute("data-path")
+      .replace(/<value>/, true);
+    updateStatus(payload, null, false);
+  }
+}
+
+function handlePowerOn(e) {
+  // If a power on event selects a zoom input, set the cameras to zoom preset
+  const triggerBtn = e.detail; // power button
+  const targetBtn = e.target; // zoom camera preset button
+  const channel = triggerBtn.getAttribute("data-channel");
+  if (triggerBtn.getAttribute("data-value") === "false") {
+    return;
+  }
+  const selectedZoomInputs = channel
+    ? document.querySelectorAll(
+        `.display-source-radio[data-channel=${channel}] .radio-option[data-zoom-meeting-prompt][data-value=true]`,
+      )
+    : false;
+
+  if (selectedZoomInputs && selectedZoomInputs.length > 0) {
+    const radioIsSetToPrivacy = targetBtn.parentElement.querySelector(
       ".radio-option[data-option=privacy][data-value=true]",
     )
       ? true
       : false;
-    const noPresetSelected = targetBtnParent.querySelector(
+    const noPresetSelected = targetBtn.parentElement.querySelector(
       ".radio-option.active",
     )
       ? false
@@ -61,34 +118,8 @@ function handleZoomSelected(e) {
       const payload = targetBtn
         .getAttribute("data-path")
         .replace(/<value>/, true);
-      updateStatus(payload, null);
+      updateStatus(payload, null, false);
     }
-    zoomInputActive = true;
-  }
-}
-
-function handlePowerSelected(e) {
-  // If last power is turned off, set the cameras to called preset
-  const triggerBtn = e.detail;
-  const targetBtn = e.target;
-  if (triggerBtn.getAttribute("data-value") === "true") {
-    powerActive = true;
-    return;
-  }
-  const allPowerOff =
-    document.querySelectorAll(`.power-button .active`).length === 0;
-  // If recording doesn't exist OR is not active AND all power buttons are off, set the cameras to called preset
-  if (
-    (!Object.hasOwn(globals.getState(), "recording") ||
-      globals.getState().recording?.status?.recording === false) &&
-    allPowerOff === true &&
-    powerActive === true
-  ) {
-    const payload = targetBtn
-      .getAttribute("data-path")
-      .replace(/<value>/, true);
-    updateStatus(payload, null);
-    powerActive = false;
   }
 }
 

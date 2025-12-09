@@ -4,7 +4,8 @@ import { updateStatus } from "../../js/orchestrator_request.js";
 import {
   bumpMainContentForBanners,
   registerStateChangeEvent,
-  countdown
+  countdown,
+  dispatchStateChangeEvents,
 } from "../../js/utilities.js";
 import { attachSharedModalListeners, openModal } from "../../js/modals.js";
 
@@ -310,6 +311,10 @@ function selectZoomInput(input, newSelection = false) {
     "[data-zoom-meeting-prompt], [data-zoom-share-prompt]",
   );
   if (zoomOpts.length > 1) {
+    // See what has last-selected attribute currently to compare
+    const previouslySelectedInput = radioGroup.querySelector(
+      "[data-zoom-last-selected]",
+    );
     // De-select all Zoom inputs
     radioGroup
       .querySelectorAll("[data-zoom-meeting-prompt], [data-zoom-share-prompt]")
@@ -340,11 +345,14 @@ function selectZoomInput(input, newSelection = false) {
     } else {
       input.setAttribute("data-override", false);
     }
-  }
-
-  // finally, update visually
-  if (input.getAttribute("data-override") !== "true") {
-    input.classList.add("active");
+    // finally, update visually
+    if (input.getAttribute("data-override") !== "true") {
+      input.classList.add("active");
+      // Notify subscribers when switching between "Share Screen" and "Meeting Prompt"
+      if (previouslySelectedInput !== input) {
+        dispatchStateChangeEvents(input);
+      }
+    }
   }
 }
 

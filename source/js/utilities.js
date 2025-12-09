@@ -137,6 +137,11 @@ function generateUniqueId() {
   return `${timestamp}-${randomPart}-${counter}`;
 }
 
+// Custom function to sleep for given milliseconds
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /*
  * When triggerInput state is updated, dispatch event on subscribers
  * eventName - string
@@ -254,4 +259,5 @@ export {
   registerStateChangeEvent,
   dispatchStateChangeEvents,
   throwClientError,
+  sleep,
 };

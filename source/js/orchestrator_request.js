@@ -1,6 +1,6 @@
 /* eslint-disable prettier/prettier */
 import { globals } from "./globals.js";
-import { throwClientError } from "./utilities.js";
+import { throwClientError, sleep } from "./utilities.js";
 
 const TIMEOUT_WAIT = 5000;
 const MAX_RETRIES = 2;
@@ -69,7 +69,6 @@ function shuffleArrayWithSeed(array, seedStr) {
 
 async function failover() {
   const backupHosts = globals.getState()?.backup_orchestrators;
-  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
   if (backupHosts && backupHosts.length > 0) {
     // Shuffle the backup_orchestrators list deterministically, using the system as a seed
@@ -100,7 +99,7 @@ async function failover() {
         location.replace(newLocation);
       }
 
-      await delay(1000);
+      await sleep(1000);
     }
   } else {
     console.log("No backup_orchestrators configured");

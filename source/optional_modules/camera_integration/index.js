@@ -1,6 +1,6 @@
 /* Global variables */
 import { updateStatus } from "../../js/orchestrator_request.js";
-import { registerStateChangeEvent } from "../../js/utilities.js";
+import { registerStateChangeEvent, sleep } from "../../js/utilities.js";
 import { globals } from "../../js/globals.js";
 let guiInitiated = false;
 
@@ -75,7 +75,7 @@ function handlePowerOff(e) {
     return;
   }
   const allPowerOff =
-    document.querySelectorAll(`.power-button .active`).length === 0;
+    document.querySelectorAll(`.power-button.active`).length === 0;
   // If recording doesn't exist OR is not active AND all power buttons are off, set the cameras to called preset
   if (
     (!Object.hasOwn(globals.getState(), "recording") ||
@@ -89,7 +89,7 @@ function handlePowerOff(e) {
   }
 }
 
-function handlePowerOn(e) {
+async function handlePowerOn(e) {
   // If a power on event selects a zoom input, set the cameras to zoom preset
   const triggerBtn = e.detail; // power button
   const targetBtn = e.target; // zoom camera preset button
@@ -97,6 +97,7 @@ function handlePowerOn(e) {
   if (triggerBtn.getAttribute("data-value") === "false") {
     return;
   }
+  await sleep(100);
   const selectedZoomInputs = channel
     ? document.querySelectorAll(
         `.display-source-radio[data-channel=${channel}] .radio-option[data-zoom-meeting-prompt][data-value=true]`,

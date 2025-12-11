@@ -252,11 +252,7 @@ function handleZoomRoomWarning(e) {
   const action = btn.getAttribute("data-action");
   const payload = JSON.stringify({
     zoom_room: {
-      meeting: {
-        presence: {
-          [action]: false,
-        },
-      },
+      [action]: false,
     },
   });
 

@@ -1,6 +1,9 @@
 /* eslint-disable prettier/prettier */
 import { globals } from "./globals.js";
 import { throwClientError, sleep } from "./utilities.js";
+import { installAbortSignalPolyfill } from 'abort-signal-polyfill';
+
+installAbortSignalPolyfill();
 
 const TIMEOUT_WAIT = 5000;
 const MAX_RETRIES = 2;

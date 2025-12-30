@@ -116,16 +116,16 @@ form#join-meeting-by-id #form-actions button {
   padding: 1.5rem 2.5rem;
 }
 
-#manual-zoom-prompt.focused {
+#manual-zoom-prompt.focus {
   height: calc(100% + 43rem);
   animation-duration: 0.5s;
   animation-name: slideup;
   top: -40rem;
 }
-#manual-zoom-prompt.focused form#join-meeting-by-id {
+#manual-zoom-prompt.focus form#join-meeting-by-id {
   margin-top: 0rem;
 }
-#manual-zoom-prompt.focused form#join-meeting-by-id #form-actions button {
+#manual-zoom-prompt.focus form#join-meeting-by-id #form-actions button {
   margin-top: 0.5rem;
 }
 

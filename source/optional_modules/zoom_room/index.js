@@ -27,6 +27,10 @@ function showBanner() {
   bumpMainContentForBanners();
 }
 
+function resetScroll() {
+  document.getElementById("manual-zoom-prompt").classList.remove("focus");
+}
+
 function toggleSIP(e = null) {
   const label = document.querySelector(
     "#manual-zoom-prompt label[for=meeting_id]",
@@ -181,6 +185,7 @@ function handleManualJoinSubmit(e) {
   // callback for updateStatus
   function reset() {
     modal.classList.add("hidden");
+    resetScroll();
   }
 
   joinZoomMeeting(meetingId, password, reset);
@@ -646,28 +651,34 @@ function initiateZoomGUI() {
       .querySelector("#manual-zoom-prompt button.dismiss-modal")
       .addEventListener("click", () => {
         // clear form and remove submit handler
+        document.getElementById("join-meeting-by-id").reset();
         document
           .getElementById("join-meeting-by-id")
           .removeEventListener("submit", handleManualJoinSubmit);
-        document.getElementById("join-meeting-by-id").reset();
+        resetScroll();
       });
     document
       .querySelector("#leave-zoom-prompt button.dismiss-modal")
       .addEventListener("click", cleanupLeaveZoomPrompt);
 
-    // Focus listener for "join meeting" form inputs
-    document
-      .querySelectorAll("form#join_meeting_by_id input")
-      .forEach(function handler(input) {
-        input.addEventListener("focus", function () {
-          document
-            .getElementById("manual-zoom-prompt")
-            .classList.add("focused");
+    // Focus listener for "join meeting" form inputs: shift for onscreen keyboard on tablets
+    // Only apply to touch capable clients
+    if ("ontouchstart" in window || navigator.maxTouchPoints > 0) {
+      document
+        .querySelectorAll("form#join-meeting-by-id input")
+        .forEach((input) => {
+          input.addEventListener("focus", () => {
+            document
+              .getElementById("manual-zoom-prompt")
+              .classList.add("focus");
+          });
         });
-      });
+    } else {
+      console.log("Client is not touch capable");
+    }
 
     // Attach listeners for static SIP toggle buttons
-    document.querySelectorAll("#sip-toggle button").forEach(function (button) {
+    document.querySelectorAll("#sip-toggle button").forEach((button) => {
       button.addEventListener("click", toggleSIP);
     });
 

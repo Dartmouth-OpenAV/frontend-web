@@ -220,8 +220,7 @@ function handleTogglePower(e) {
   else {
     // Reset counter
     clearInterval(countdownTimeoutId);
-    // confirmation.querySelector(".counter").innerHTML = shutdownWarningTime;
-  
+
     // Launch countdown timer
     countdownTimeoutId = countdown(
       confirmation.querySelector(".counter"),

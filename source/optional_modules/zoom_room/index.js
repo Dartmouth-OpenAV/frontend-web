@@ -84,6 +84,7 @@ function leaveZoomMeeting(userInput = true) {
     "#leave-zoom-prompt button[name=leave-meeting]",
   );
   submitBtn.removeEventListener("click", leaveZoomMeeting);
+  submitBtn.removeEventListener("touchstart", leaveZoomMeeting);
 
   // Visual feedback: update banner
   const banner = document.getElementById("zoom-room-notification");
@@ -125,6 +126,15 @@ function openManualJoinForm() {
   openModal(null, "manual-zoom-prompt");
 }
 
+function cleanupManualZoomPrompt() {
+  // clear form and remove submit handler
+  document.getElementById("join-meeting-by-id").reset();
+  document
+    .getElementById("join-meeting-by-id")
+    .removeEventListener("submit", handleManualJoinSubmit);
+  resetScroll();
+}
+
 // Making this snippet reusable to share with "Leave" button in status banner.
 // Need the optional userInput arg so that when power off triggers Zoom leave
 // the leave can be flagged as non-user
@@ -134,6 +144,9 @@ function openLeaveZoomPrompt(userInput = true) {
   modal
     .querySelector("button[name=leave-meeting]")
     .addEventListener("click", leaveZoomMeeting);
+  modal
+    .querySelector("button[name=leave-meeting]")
+    .addEventListener("touchstart", leaveZoomMeeting);
 
   // Start countdown with default action of leaving meeting
   clearInterval(countdownTimeoutId);
@@ -157,6 +170,7 @@ function handleSuggestedJoinSubmit() {
   const modal = document.getElementById("scheduled-zoom-prompt");
   const submitBtn = modal.querySelector("button[name=join-suggested-meeting]"); // TO DO: refactor to use form/submit?
   submitBtn.removeEventListener("click", handleSuggestedJoinSubmit);
+  submitBtn.removeEventListener("touchstart", handleSuggestedJoinSubmit);
 
   // callback for updateStatus
   function reset() {
@@ -168,6 +182,15 @@ function handleSuggestedJoinSubmit() {
     zoomData.suggested_meeting.password,
     reset,
   );
+}
+
+function cleanupSuggestedMeetingPrompt() {
+  const btn = document.querySelector(
+    "#scheduled-zoom-prompt button[name=join-suggested-meeting]",
+  );
+  btn.removeEventListener("click", handleSuggestedJoinSubmit);
+  btn.removeEventListener("touchstart", handleSuggestedJoinSubmit);
+  openManualJoinForm();
 }
 
 function handleManualJoinSubmit(e) {
@@ -211,6 +234,9 @@ function handleZoomMeetingPromptClick(e) {
     modal
       .querySelector("button[name=join-suggested-meeting]")
       .addEventListener("click", handleSuggestedJoinSubmit);
+    modal
+      .querySelector("button[name=join-suggested-meeting]")
+      .addEventListener("touchstart", handleSuggestedJoinSubmit);
 
     openModal(null, "scheduled-zoom-prompt");
   }
@@ -541,11 +567,13 @@ function initiateZoomGUI() {
     // Attach listeners to all controls tagged data-zoom-meeting-prompt
     document.querySelectorAll("[data-zoom-meeting-prompt]").forEach((input) => {
       input.addEventListener("click", handleZoomMeetingPromptClick);
+      input.addEventListener("touchstart", handleZoomMeetingPromptClick);
     });
 
     // Attach listeners to all controls tagged data-zoom-sharing-prompt
     document.querySelectorAll("[data-zoom-share-prompt]").forEach((input) => {
       input.addEventListener("click", handleZoomSharePromptClick);
+      input.addEventListener("touchstart", handleZoomSharePromptClick);
     });
 
     // Select one Zoom input in radios with multiple Zoom inputs selected at boot
@@ -638,28 +666,24 @@ function initiateZoomGUI() {
     // Special extra handlers for the dismiss-modal buttons (clean up Zoom handlers):
     document
       .querySelector("#scheduled-zoom-prompt button.dismiss-modal")
-      .addEventListener("click", () => {
-        // remove scheduled-zoom-prompt submit handler and open Manual Join prompt
-        document
-          .querySelector(
-            "#scheduled-zoom-prompt button[name=join-suggested-meeting]",
-          )
-          .removeEventListener("click", handleSuggestedJoinSubmit);
-        openManualJoinForm();
-      });
+      .addEventListener("click", cleanupSuggestedMeetingPrompt);
+    document
+      .querySelector("#scheduled-zoom-prompt button.dismiss-modal")
+      .addEventListener("touchstart", cleanupSuggestedMeetingPrompt);
+
     document
       .querySelector("#manual-zoom-prompt button.dismiss-modal")
-      .addEventListener("click", () => {
-        // clear form and remove submit handler
-        document.getElementById("join-meeting-by-id").reset();
-        document
-          .getElementById("join-meeting-by-id")
-          .removeEventListener("submit", handleManualJoinSubmit);
-        resetScroll();
-      });
+      .addEventListener("click", cleanupManualZoomPrompt);
+    document
+      .querySelector("#manual-zoom-prompt button.dismiss-modal")
+      .addEventListener("touchstart", cleanupManualZoomPrompt);
+
     document
       .querySelector("#leave-zoom-prompt button.dismiss-modal")
       .addEventListener("click", cleanupLeaveZoomPrompt);
+    document
+      .querySelector("#leave-zoom-prompt button.dismiss-modal")
+      .addEventListener("touchstart", cleanupLeaveZoomPrompt);
 
     // Focus listener for "join meeting" form inputs: shift for onscreen keyboard on tablets
     // Only apply to touch capable clients
@@ -680,6 +704,7 @@ function initiateZoomGUI() {
     // Attach listeners for static SIP toggle buttons
     document.querySelectorAll("#sip-toggle button").forEach((button) => {
       button.addEventListener("click", toggleSIP);
+      button.addEventListener("touchstart", toggleSIP);
     });
 
     // Start listening for state changes from main

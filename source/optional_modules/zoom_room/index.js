@@ -685,21 +685,21 @@ function initiateZoomGUI() {
       .querySelector("#leave-zoom-prompt button.dismiss-modal")
       .addEventListener("touchstart", cleanupLeaveZoomPrompt);
 
-    // Focus listener for "join meeting" form inputs: shift for onscreen keyboard on tablets
-    // Only apply to touch capable clients
-    if ("ontouchstart" in window || navigator.maxTouchPoints > 0) {
-      document
-        .querySelectorAll("form#join-meeting-by-id input")
-        .forEach((input) => {
-          input.addEventListener("focus", () => {
-            document
-              .getElementById("manual-zoom-prompt")
-              .classList.add("focus");
-          });
-        });
-    } else {
-      console.log("Client is not touch capable");
-    }
+    // // Focus listener for "join meeting" form inputs: shift for onscreen keyboard on tablets
+    // // Only apply to touch capable clients
+    // if ("ontouchstart" in window || navigator.maxTouchPoints > 0) {
+    //   document
+    //     .querySelectorAll("form#join-meeting-by-id input")
+    //     .forEach((input) => {
+    //       input.addEventListener("focus", () => {
+    //         document
+    //           .getElementById("manual-zoom-prompt")
+    //           .classList.add("focus");
+    //       });
+    //     });
+    // } else {
+    //   console.log("Client is not touch capable");
+    // } // Note: Android seems to be handling the screen shift automatically as of 2026
 
     // Attach listeners for static SIP toggle buttons
     document.querySelectorAll("#sip-toggle button").forEach((button) => {

@@ -59,6 +59,9 @@
   font-size: 2.8rem;
   margin-right: 1rem;
 }
+#manual-zoom-prompt form#join-meeting-by-id #form-actions button {
+  margin-top: 0.5rem;
+}
 
 #share-screen-zoom-prompt .zoom-sharing-key {
   border-radius: 1.5rem;
@@ -116,7 +119,8 @@ form#join-meeting-by-id #form-actions button {
   padding: 1.5rem 2.5rem;
 }
 
-#manual-zoom-prompt.focus {
+/* Note: Android seems to be handling the screen shift automatically as of 2026 */
+/* #manual-zoom-prompt.focus {
   height: calc(100% + 43rem);
   animation-duration: 0.5s;
   animation-name: slideup;
@@ -124,11 +128,10 @@ form#join-meeting-by-id #form-actions button {
 }
 #manual-zoom-prompt.focus form#join-meeting-by-id {
   margin-top: 0rem;
-}
+} 
 #manual-zoom-prompt.focus form#join-meeting-by-id #form-actions button {
   margin-top: 0.5rem;
-}
-
+} */ 
 
 
 #autoleave-zoom-prompt {

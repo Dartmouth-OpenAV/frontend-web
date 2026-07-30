@@ -266,7 +266,8 @@ function setupControlSet(controlSetId, data, path, containerId) {
         )
         .replace(/{{channel}}/g, channel)
         .replace(/{{defaultOption}}/g, defaultOption)
-        .replace(/{{class}}/g, typeSpecificClass);
+        .replace(/{{class}}/g, typeSpecificClass)
+        .replace(/{{otherAttributes}}/g, otherAttributes);
 
       // options
       const optionTemplate = document.getElementById(

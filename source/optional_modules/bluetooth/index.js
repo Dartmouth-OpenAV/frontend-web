@@ -107,7 +107,7 @@ function updateRoomName(e) {
 }
 
 function updateDeviceStatus(e) {
-  const bluetoothInfo = e.detail.state?.bluetooth;
+  const bluetoothInfo = e.detail?.bluetooth;
   const statusElement = document.getElementById("bluetooth-description");
   const pairButton = document.getElementById("bluetooth-pairing-start-button");
   const bluetoothBanner = document.getElementById(
@@ -117,16 +117,20 @@ function updateDeviceStatus(e) {
     .getElementById("bluetooth-status-notification")
     .querySelector("button[name=disconnect-bluetooth]");
 
-  if (bluetoothInfo?.status == "CONNECTED") {
+  var statusText = bluetoothInfo?.status ? bluetoothInfo?.status.replace(/[\r\n'"]+/g, '') : "unknown"; 
+
+  if (statusText == "CONNECTED") {
     cancelBluetoothCountdowns();
+    var musicInfo = bluetoothInfo?.music_info ? bluetoothInfo?.music_info.replace(/[\r\n'"]+/g, '') : "unknown";
+    var deviceInfo = bluetoothInfo?.device_info ? bluetoothInfo?.device_info.replace(/[\r\n'"]+/g, '') : "unknown";
 
     if (statusElement) {
       let statusHTML = "<p>Connected to Device</p>";
-      if (bluetoothInfo.device_info && bluetoothInfo.device_info != "unknown") {
-        statusHTML = statusHTML + "<p>" + bluetoothInfo.device_info + "</p>";
+      if (deviceInfo!= "unknown") {
+        statusHTML = statusHTML + "<p>" + deviceInfo + "</p>";
       }
-      if (bluetoothInfo.music_info && bluetoothInfo.music_info != "unknown") {
-        statusHTML = statusHTML + "<p>" + bluetoothInfo.music_info + "</p>";
+      if (musicInfo != "unknown") {
+        statusHTML = statusHTML + "<p>" + musicInfo + "</p>";
       }
       statusElement.innerHTML = statusHTML;
     }
@@ -149,10 +153,10 @@ function updateDeviceStatus(e) {
         ".countdown-container",
       );
       let bannerHTML = "<p>Connected to Device</p>";
-      if (bluetoothInfo.device_info && bluetoothInfo.device_info != "unknown") {
-        bannerHTML = "<p>Connected to " + bluetoothInfo.device_info;
-        if (bluetoothInfo.music_info && bluetoothInfo.music_info != "unknown") {
-          bannerHTML = bannerHTML + " - " + bluetoothInfo.music_info;
+      if (deviceInfo != "unknown") {
+        bannerHTML = "<p>Connected to " + deviceInfo;
+        if (musicInfo != "unknown") {
+          bannerHTML = bannerHTML + " - " + musicInfo;
         }
         bannerHTML = bannerHTML + "</p>";
       }
@@ -173,7 +177,7 @@ function updateDeviceStatus(e) {
       hideBluetoothModal();
       modalDismissTimeout = null;
     }, 5000);
-  } else if (bluetoothInfo?.status == "IDLE" && !modalPairingTimeoutId) {
+  } else if (statusText == "IDLE" && !modalPairingTimeoutId) {
     // Resets modal and banner
     resetModalState();
   }

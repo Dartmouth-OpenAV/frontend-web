@@ -2,9 +2,9 @@
 import { updateStatus } from "../../js/orchestrator_request.js";
 import { registerStateChangeEvent, sleep } from "../../js/utilities.js";
 import { globals } from "../../js/globals.js";
-import { openModal } from "../../js/modals.js";
 
 import cameraPreview from "./components/camera_preview.html";
+import cameraTabs from "./components/camera_tabs.html";
 import "./camera_preview.css";
 
 let guiInitiated = false;
@@ -47,19 +47,24 @@ function initiateCameraIntegration() {
     const previewConfigContent = globals.getState()?.camera_preview;
     if (previewConfigContent) {
       iframeURLs = previewConfigContent?.iframe_urls;
-      const cameraPresetControl = document.querySelector("[data-camera-preview]");
+      const cameraPresetControl = document.querySelector("[data-camera-preview-all]");
       if (cameraPresetControl) {
         //data-camera-preview is set on the control set
         //need to find parent modal to insert preview HTML
         const cameraModal = cameraPresetControl.closest('.modal');
         const cameraModalPrimaryControl = cameraPresetControl.closest('.primary-control-group');
         cameraModalPrimaryControl.insertAdjacentHTML('beforeend', cameraPreview);
+        cameraModalPrimaryControl.insertAdjacentHTML('afterbegin', cameraTabs);
         iframeGrid = document.getElementById("camera-preview-iframe-grid")
         const cameraModalLauncherButton = document.querySelector(`[data-modal=${cameraModal.id}]`);
         if (cameraModalLauncherButton) {
-          cameraModalLauncherButton.addEventListener("click", renderPreviewGrid);
-          cameraModalLauncherButton.addEventListener("touchstart", renderPreviewGrid);
+          cameraModalLauncherButton.addEventListener("click", () => renderPreviewGrid('all'));
+          cameraModalLauncherButton.addEventListener("touchstart", () => renderPreviewGrid('all'));
+          cameraModalLauncherButton.addEventListener("click", () => switchTabs('all'));
+          cameraModalLauncherButton.addEventListener("touchstart", () => switchTabs('all'));
         }
+        renderCameraTabs();
+        switchTabs('all');
         //clearing the iframes after leaving the modal
         const backButton = cameraModal.querySelector(".dismiss-modal");
         if (backButton) {
@@ -166,19 +171,93 @@ function buildStreamUrl(base) {
   return url.toString();
 }
 
-function renderPreviewGrid() {
-  clearPreviewGrid();
-  for (const base of iframeURLs) {
-    const tile = document.createElement('div');
-    tile.className = 'iframe-tile';
-
-    const frame = document.createElement('iframe');
-    frame.scrolling = 'no';
-    frame.src = buildStreamUrl(base);
-
-    tile.appendChild(frame);
-    iframeGrid.appendChild(tile);
+function renderCameraTabs(){
+  const cameraTabDiv = document.getElementById('camera-preview-tabs');
+  if (document.querySelector('[data-camera-preview-all]')){
+    const tabButtonAll = makeTabButton('all');
+    cameraTabDiv.appendChild(tabButtonAll);
   }
+  for (const name of Object.keys(iframeURLs)) {
+    if (document.querySelector(`[data-camera-preview-${name}]`)){
+      const tabButton = makeTabButton(name);
+      cameraTabDiv.appendChild(tabButton);
+    }
+  }
+  if (cameraTabDiv.children.length <= 1){
+    cameraTabDiv.classList.add('hidden');
+  }
+}
+
+function makeTabButton(name) {
+  const tabButton = document.createElement('button');
+  tabButton.classList.add('camera-tab-button', 'text-only');
+  tabButton.id = `${name}`;
+
+  const tabLabel = document.createElement('div');
+  tabLabel.classList.add('button-label');
+  // Replaces dashes with spaces and capitalizes first letter of every word
+  const formattedName = formatName(name);
+  tabLabel.textContent = formattedName;
+
+  tabButton.appendChild(tabLabel);
+  tabButton.addEventListener('touchstart',() => switchTabs(`${name}`));
+  tabButton.addEventListener('click',() => switchTabs(`${name}`));
+  return tabButton;
+}
+
+function formatName(str) {
+  str = str.replace('-',' ');
+  str = str.replace(/\b\w/g, char => char.toUpperCase());
+  return str;
+}
+
+function renderPreviewGrid(selection) {
+  clearPreviewGrid();
+  for (const [name, base] of Object.entries(iframeURLs)) {
+    if (selection == "all" || name == selection) {
+      const tile = document.createElement('div');
+      tile.className = 'iframe-tile';
+
+      const frame = document.createElement('iframe');
+      frame.src = buildStreamUrl(base);
+
+      tile.appendChild(frame);
+      iframeGrid.appendChild(tile);
+    }
+  }
+}
+
+function switchTabs(selection) {
+  //find button with selection
+  const newButton = document.querySelector(`#${selection}.camera-tab-button`);
+  const newControlWrapper = document.querySelector(`[data-camera-preview-${selection}]`);
+  var newControls;
+  if (newControlWrapper) {
+    newControls = newControlWrapper.closest('.secondary-control-group');
+  }
+  //mark current active button inactive, mark new button as active. 
+  const currentButton = document.querySelector('.camera-tab-button.active');
+  const currentControls = document.querySelectorAll('#camera_controls-content > .secondary-control-group:not(.hidden)');
+
+  //Hide current and show new control set
+  if (currentControls) {
+    currentControls.forEach((control) => {
+      control.classList.add('hidden');
+    });
+  }
+  if (newControls) {
+    newControls.classList.remove("hidden");
+  }
+  //Change active button tab
+  if (currentButton) {
+    currentButton.classList.remove("active");
+  }
+  if (newButton) {
+    newButton.classList.add("active");
+  }
+
+  //Render grid with selection
+  renderPreviewGrid(selection);
 }
 
 function clearPreviewGrid() {

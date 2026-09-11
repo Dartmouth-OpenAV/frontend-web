@@ -9,6 +9,11 @@
   width: 100dvw;
   height: 43dvh;
 }
+@media (min-height: 943px) {
+  .preview-content {
+    max-height: 400px;
+  }
+}
 
 .iframe-grid {
   display: grid;
@@ -16,9 +21,11 @@
   gap: 8px;
   height:100%;
 }
-.iframe-grid:has(.iframe-tile:nth-child(2))  { grid-template-columns: repeat(2, 1fr); }
-.iframe-grid:has(.iframe-tile:nth-child(3))  { grid-template-columns: repeat(3, 1fr); }
-.iframe-grid:has(.iframe-tile:nth-child(4))  { grid-template-columns: repeat(2, 1fr); }
+/* Each selector matches "N tiles or more" */
+.iframe-grid:has(.iframe-tile:nth-child(2)) { grid-template-columns: repeat(2, 1fr); }
+.iframe-grid:has(.iframe-tile:nth-child(3)) { grid-template-columns: repeat(3, 1fr); }
+.iframe-grid:has(.iframe-tile:nth-child(4)) { grid-template-columns: repeat(2, 1fr); }
+.iframe-grid:has(.iframe-tile:nth-child(5)) { grid-template-columns: repeat(3, 1fr); height: 270px; }
 
 .iframe-tile {
   aspect-ratio: 16 / 9;

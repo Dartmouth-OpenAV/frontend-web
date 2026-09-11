@@ -10,6 +10,7 @@ import "./camera_preview.css";
 let guiInitiated = false;
 var iframeGrid;
 var iframeURLs;
+var cameraModalId;
 
 //insert iframe grid into camera_controls-content aka {modal}-content
 
@@ -34,8 +35,6 @@ function initiateCameraIntegration() {
         [...document.querySelectorAll("[data-camera-power-false]")],
         handlePowerOff,
       );
-    });
-    document.querySelectorAll(".power-button").forEach((powerButton) => {
       registerStateChangeEvent(
         "power_updated",
         powerButton,
@@ -53,23 +52,24 @@ function initiateCameraIntegration() {
         //need to find parent modal to insert preview HTML
         const cameraModal = cameraPresetControl.closest('.modal');
         const cameraModalPrimaryControl = cameraPresetControl.closest('.primary-control-group');
-        cameraModalPrimaryControl.insertAdjacentHTML('beforeend', cameraPreview);
-        cameraModalPrimaryControl.insertAdjacentHTML('afterbegin', cameraTabs);
-        iframeGrid = document.getElementById("camera-preview-iframe-grid")
-        const cameraModalLauncherButton = document.querySelector(`[data-modal=${cameraModal.id}]`);
-        if (cameraModalLauncherButton) {
-          cameraModalLauncherButton.addEventListener("click", () => renderPreviewGrid('all'));
-          cameraModalLauncherButton.addEventListener("touchstart", () => renderPreviewGrid('all'));
-          cameraModalLauncherButton.addEventListener("click", () => switchTabs('all'));
-          cameraModalLauncherButton.addEventListener("touchstart", () => switchTabs('all'));
-        }
-        renderCameraTabs();
-        switchTabs('all');
-        //clearing the iframes after leaving the modal
-        const backButton = cameraModal.querySelector(".dismiss-modal");
-        if (backButton) {
-          backButton.addEventListener("click", clearPreviewGrid);
-          backButton.addEventListener("touchstart", clearPreviewGrid);
+        if (cameraModal && cameraModalPrimaryControl) {
+          cameraModalId = cameraModal.id;
+          cameraModalPrimaryControl.insertAdjacentHTML('beforeend', cameraPreview);
+          cameraModalPrimaryControl.insertAdjacentHTML('afterbegin', cameraTabs);
+          iframeGrid = document.getElementById("camera-preview-iframe-grid")
+          const cameraModalLauncherButton = document.querySelector(`[data-modal=${cameraModal.id}]`);
+          if (cameraModalLauncherButton) {
+            cameraModalLauncherButton.addEventListener("click", () => switchTabs('all'));
+            cameraModalLauncherButton.addEventListener("touchstart", () => switchTabs('all'));
+          }
+          renderCameraTabs();
+          switchTabs('all');
+          //clearing the iframes after leaving the modal
+          const backButton = cameraModal.querySelector(".dismiss-modal");
+          if (backButton) {
+            backButton.addEventListener("click", clearPreviewGrid);
+            backButton.addEventListener("touchstart", clearPreviewGrid);
+          }
         }
       }
     }
@@ -165,10 +165,15 @@ async function handlePowerOn(e) {
 }
 
 function buildStreamUrl(base) {
-  const url = new URL(base);
-  url.searchParams.set('controls', 'false');
-  url.searchParams.set('muted', 'true');
-  return url.toString();
+  try {
+    const url = new URL(base);
+    url.searchParams.set('controls', 'false');
+    url.searchParams.set('muted', 'true');
+    return url.toString();
+  } catch (err) {
+    console.error(`camera_integration: invalid stream URL "${base}"`, err);
+    return null;
+  }
 }
 
 function renderCameraTabs(){
@@ -206,24 +211,32 @@ function makeTabButton(name) {
 }
 
 function formatName(str) {
-  str = str.replace('-',' ');
+  str = str.replace(/-/g, ' ');
   str = str.replace(/\b\w/g, char => char.toUpperCase());
   return str;
 }
 
 function renderPreviewGrid(selection) {
   clearPreviewGrid();
+  const streamUrls = [];
   for (const [name, base] of Object.entries(iframeURLs)) {
     if (selection == "all" || name == selection) {
-      const tile = document.createElement('div');
-      tile.className = 'iframe-tile';
-
-      const frame = document.createElement('iframe');
-      frame.src = buildStreamUrl(base);
-
-      tile.appendChild(frame);
-      iframeGrid.appendChild(tile);
+      const streamUrl = buildStreamUrl(base);
+      if (streamUrl) {
+        streamUrls.push(streamUrl);
+      }
     }
+  }
+
+  for (const streamUrl of streamUrls) {
+    const tile = document.createElement('div');
+    tile.className = 'iframe-tile';
+
+    const frame = document.createElement('iframe');
+    frame.src = streamUrl;
+
+    tile.appendChild(frame);
+    iframeGrid.appendChild(tile);
   }
 }
 
@@ -237,7 +250,7 @@ function switchTabs(selection) {
   }
   //mark current active button inactive, mark new button as active. 
   const currentButton = document.querySelector('.camera-tab-button.active');
-  const currentControls = document.querySelectorAll('#camera_controls-content > .secondary-control-group:not(.hidden)');
+  const currentControls = document.querySelectorAll(`#${cameraModalId}-content > .secondary-control-group:not(.hidden)`);
 
   //Hide current and show new control set
   if (currentControls) {

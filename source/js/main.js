@@ -8,6 +8,7 @@ import { openModal, setupModals } from "./modals.js";
 import {
   followPath,
   bumpMainContentForBanners,
+  observeRoomHeaderHeight,
   registerStateChangeEvent,
   throwClientError,
 } from "./utilities.js";
@@ -692,6 +693,9 @@ function attemptFailback() {
  * Page load
  */
 window.addEventListener("load", async () => {
+  // Keep spacing below the header in sync with its actual rendered height
+  observeRoomHeaderHeight();
+
   // Check for home orchestrator from server config
   await fetch("/config")
     .then((response) => response.json())

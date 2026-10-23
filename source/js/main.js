@@ -614,6 +614,11 @@ async function refreshState() {
         state.config_hash !== configHash ||
         !document.getElementById("main-controls").innerHTML
       ) {
+        // A previously-seen hash that changed means the config was updated: reload
+        if (configHash !== undefined && state.config_hash !== configHash) {
+          location.reload();
+          return;
+        }
         configHash = state.config_hash;
         drawUI(state);
       }

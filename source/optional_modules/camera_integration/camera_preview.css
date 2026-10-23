@@ -68,3 +68,86 @@ button.camera-tab-button:last-child {
     0 -2px 4px rgba(0,0,0,.15);   /* top shadow */
   border-radius :0px 1rem 1rem 0px;
 }
+
+/* Side layout: tabs stay horizontal across the top; below them the controls sit on the left
+   and the preview fills the right.
+   The .camera-side class is toggled in index.js based on the camera_preview "layout" config
+   ("side", "top", or "auto") */
+.camera-side {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  column-gap: 2rem;
+  align-content: start;
+  justify-content: stretch;
+}
+.camera-side > .control-tabs {
+  grid-column: 1 / -1;
+  grid-row: 1;
+}
+/* Row 2 grows with the controls so the group background always covers all of its buttons */
+.camera-side > .secondary-control-group {
+  grid-column: 1;
+  grid-row: 2;
+  width: 100%;
+}
+.camera-side > .preview-content {
+  grid-column: 2;
+  grid-row: 2;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  min-height: 0;
+  align-items: stretch;
+}
+
+/* Preset buttons: one column, wrapping into more only at the bottom of the page.
+   --preset-rows is set in index.js; the 2-row fallback is only used before it is measured. */
+.camera-side .secondary-control-group .radio-container {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(var(--preset-rows, 1), auto);
+  grid-auto-columns: max-content;
+  flex-grow: 0;
+}
+.camera-side .secondary-control-group .radio-container:not([style*="--preset-rows"]) {
+  grid-template-rows: none;
+  grid-auto-flow: row;
+}
+
+/* Preview fills the available column instead of a fixed height */
+.camera-side .iframe-grid,
+.camera-side .iframe-grid:has(.iframe-tile:nth-child(5)) {
+  width: 100%;
+  height: 100%;
+  grid-auto-rows: minmax(0, 1fr);
+  align-content: center;
+}
+.camera-side .iframe-tile {
+  width: auto;
+  height: 100%;
+  max-width: 100%;
+  justify-self: center;
+}
+
+/* Shrink the tabs and control sets by 30% in both layouts */
+.camera-preview-layout {
+  --camera-controls-scale: 0.7;
+}
+.camera-preview-layout > .control-tabs,
+.camera-preview-layout > .secondary-control-group {
+  zoom: var(--camera-controls-scale);
+}
+
+/* Let the control set title wrap instead of widening the left column.
+   width: 0 removes it from the column's max-content size; flex-grow fills the space the controls set. */
+.camera-side > .secondary-control-group .header h2 {
+  width: 0;
+  flex: 1 1 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Side layout columns: 1 tile -> 1, 2-4 tiles -> 2, 5-6 tiles -> 3 */
+.camera-side .iframe-grid:has(.iframe-tile:nth-child(3)) { grid-template-columns: repeat(2, 1fr); }
+.camera-side .iframe-grid:has(.iframe-tile:nth-child(5)) { grid-template-columns: repeat(3, 1fr); }

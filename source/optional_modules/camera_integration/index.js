@@ -8,6 +8,7 @@ import cameraTabs from "./components/camera_tabs.html";
 import "./camera_preview.css";
 
 let guiInitiated = false;
+var cameraContent;
 var iframeGrid;
 var iframeURLs;
 var cameraModalId;
@@ -62,6 +63,7 @@ function initiateCameraIntegration() {
             cameraModalLauncherButton.addEventListener("click", () => switchTabs('all'));
             cameraModalLauncherButton.addEventListener("touchstart", () => switchTabs('all'));
           }
+          applyPreviewLayout(cameraModalPrimaryControl, previewConfigContent?.layout);
           renderCameraTabs();
           switchTabs('all');
           //clearing the iframes after leaving the modal
@@ -76,6 +78,51 @@ function initiateCameraIntegration() {
 
     guiInitiated = true;
   }
+}
+
+// layout: "side" (controls left of preview), "top" (controls above preview),
+// or "auto" (default): side when the screen is in landscape orientation
+function applyPreviewLayout(container, layout) {
+  container.classList.add("camera-preview-layout");
+  cameraContent = container;
+  window.addEventListener("resize", updatePresetRows);
+  const mode = ["side", "top"].includes(layout) ? layout : "auto";
+  if (mode === "auto") {
+    const landscape = window.matchMedia("(orientation: landscape)");
+    const update = () => {
+      container.classList.toggle("camera-side", landscape.matches);
+      updatePresetRows();
+    };
+    update();
+    landscape.addEventListener("change", update);
+  } else {
+    container.classList.toggle("camera-side", mode === "side");
+  }
+}
+
+// In the side layout the preset buttons stack in one column and only start a second
+// column once the next button would run past the bottom of the modal. Grid auto-flow
+// needs an explicit row count, so measure how many buttons fit and expose it as --preset-rows.
+function updatePresetRows() {
+  if (!cameraContent) return;
+  cameraContent
+    .querySelectorAll(":scope > .secondary-control-group:not(.hidden) .radio-container")
+    .forEach((radioGroup) => {
+      radioGroup.style.removeProperty("--preset-rows");
+      if (!cameraContent.classList.contains("camera-side")) return;
+      const buttons = radioGroup.querySelectorAll(":scope > button");
+      if (buttons.length < 2) return;
+      // measure rendered pixels so zoom and rem scaling don't matter
+      const first = buttons[0].getBoundingClientRect();
+      const pitch = buttons[1].getBoundingClientRect().top - first.top;
+      if (pitch <= 0) return;
+      const gap = pitch - first.height;
+      const available = cameraContent.getBoundingClientRect().bottom - first.top - gap * 2;
+      const rows = Math.max(1, Math.floor((available + gap) / pitch));
+      if (rows < buttons.length) {
+        radioGroup.style.setProperty("--preset-rows", rows);
+      }
+    });
 }
 
 function handleZoomSelected(e) {
@@ -271,6 +318,7 @@ function switchTabs(selection) {
 
   //Render grid with selection
   renderPreviewGrid(selection);
+  updatePresetRows();
 }
 
 function clearPreviewGrid() {

@@ -102,6 +102,25 @@ function bumpMainContentForBanners() {
   }
 }
 
+// Keep --room-header-height in sync with the header's actual rendered
+// height, since it can grow when the room name wraps onto multiple lines.
+function observeRoomHeaderHeight() {
+  const roomHeader = document.getElementById("room-header");
+  if (!roomHeader) {
+    return;
+  }
+
+  const applyHeight = () => {
+    document.documentElement.style.setProperty(
+      "--room-header-height",
+      `${roomHeader.getBoundingClientRect().height}px`,
+    );
+  };
+
+  applyHeight();
+  new ResizeObserver(applyHeight).observe(roomHeader);
+}
+
 function sendUIInteractionUpdate() {
   if (globals.getState()?.environment_sensing) {
     updateStatus("{}", null);
@@ -253,6 +272,7 @@ export {
   countdown,
   useProgressBar,
   bumpMainContentForBanners,
+  observeRoomHeaderHeight,
   sendUIInteractionUpdate,
   disableControl,
   enableControl,

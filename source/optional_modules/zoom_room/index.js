@@ -550,7 +550,7 @@ function initiateZoomGUI() {
         .insertAdjacentHTML("beforeend", abandonedMeetingModal);
     }
 
-    // If Sharing Key container not present, add to DOM (in main)
+    // If Sharing Key container not present, add to DOM (in room header)
     if (!document.getElementById("zoom-sharing-key-container")) {
       const shareScreenIconHTML = document.getElementById(
         "share-screen-icon-template",
@@ -560,7 +560,7 @@ function initiateZoomGUI() {
         shareScreenIconHTML,
       );
       document
-        .querySelector("main")
+        .getElementById("room-header")
         .insertAdjacentHTML("beforeend", sharingKeyHTML);
     }
 

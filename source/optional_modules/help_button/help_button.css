@@ -22,13 +22,25 @@
     flex-shrink: 0;
 }
 
+#help-modal .modal-content {
+    flex: auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+#help-modal .modal-content .dismiss-modal {
+    flex: none;
+    align-self: center;
+    margin-right: 0;
+}
+
 .help-iframe {
-    aspect-ratio: 16 / 9;
+    flex: auto;
+    min-height: 0;
     width: 100%;
     border-radius: 8px;
     overflow: hidden;
-    min-height: 0;
-    max-height: 70vh;
 }
 
 .help-iframe iframe {

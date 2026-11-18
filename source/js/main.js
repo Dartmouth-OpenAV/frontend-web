@@ -615,7 +615,12 @@ async function refreshState() {
         !document.getElementById("main-controls").innerHTML
       ) {
         // A previously-seen hash that changed means the config was updated: reload
-        if (configHash !== undefined && state.config_hash !== configHash) {
+        if (
+          configHash !== undefined &&
+          state.config_hash &&
+          state.config_hash !== configHash
+        ) {
+          getStateInProgress = false;
           location.reload();
           return;
         }
